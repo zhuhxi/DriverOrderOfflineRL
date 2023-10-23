@@ -1,0 +1,73 @@
+2023-10-23 17:30:35,149 INFO    StreamThr :233096 [internal.py:wandb_internal():86] W&B internal server running at pid: 233096, started at: 2023-10-23 17:30:35.147372
+2023-10-23 17:30:35,156 DEBUG   HandlerThread:233096 [handler.py:handle_request():146] handle_request: status
+2023-10-23 17:30:35,164 INFO    WriterThread:233096 [datastore.py:open_for_write():85] open: /home/zhx/word/DriverOrderOfflineRL/wandb/run-20231023_173035-apt07wny/run-apt07wny.wandb
+2023-10-23 17:30:35,169 DEBUG   SenderThread:233096 [sender.py:send():380] send: header
+2023-10-23 17:30:35,191 DEBUG   SenderThread:233096 [sender.py:send():380] send: run
+2023-10-23 17:30:35,829 INFO    SenderThread:233096 [dir_watcher.py:__init__():211] watching files in: /home/zhx/word/DriverOrderOfflineRL/wandb/run-20231023_173035-apt07wny/files
+2023-10-23 17:30:35,829 INFO    SenderThread:233096 [sender.py:_start_run_threads():1122] run started: apt07wny with start time 1698053435.144496
+2023-10-23 17:30:35,858 DEBUG   HandlerThread:233096 [handler.py:handle_request():146] handle_request: check_version
+2023-10-23 17:30:35,859 DEBUG   SenderThread:233096 [sender.py:send_request():407] send_request: check_version
+2023-10-23 17:30:37,069 DEBUG   HandlerThread:233096 [handler.py:handle_request():146] handle_request: run_start
+2023-10-23 17:30:37,086 DEBUG   HandlerThread:233096 [system_info.py:__init__():32] System info init
+2023-10-23 17:30:37,086 DEBUG   HandlerThread:233096 [system_info.py:__init__():47] System info init done
+2023-10-23 17:30:37,086 INFO    HandlerThread:233096 [system_monitor.py:start():194] Starting system monitor
+2023-10-23 17:30:37,087 INFO    HandlerThread:233096 [system_monitor.py:probe():214] Collecting system info
+2023-10-23 17:30:37,088 INFO    SystemMonitor:233096 [system_monitor.py:_start():158] Starting system asset monitoring threads
+2023-10-23 17:30:37,091 INFO    SystemMonitor:233096 [interfaces.py:start():190] Started cpu monitoring
+2023-10-23 17:30:37,095 INFO    SystemMonitor:233096 [interfaces.py:start():190] Started disk monitoring
+2023-10-23 17:30:37,101 INFO    SystemMonitor:233096 [interfaces.py:start():190] Started gpu monitoring
+2023-10-23 17:30:37,110 INFO    SystemMonitor:233096 [interfaces.py:start():190] Started memory monitoring
+2023-10-23 17:30:37,114 INFO    SystemMonitor:233096 [interfaces.py:start():190] Started network monitoring
+2023-10-23 17:30:37,187 DEBUG   HandlerThread:233096 [system_info.py:probe():196] Probing system
+2023-10-23 17:30:37,197 DEBUG   HandlerThread:233096 [system_info.py:_probe_git():181] Probing git
+2023-10-23 17:30:37,216 DEBUG   HandlerThread:233096 [system_info.py:_probe_git():189] Probing git done
+2023-10-23 17:30:37,216 DEBUG   HandlerThread:233096 [system_info.py:probe():244] Probing system done
+2023-10-23 17:30:37,216 DEBUG   HandlerThread:233096 [system_monitor.py:probe():223] {'os': 'Linux-5.4.0-121-generic-x86_64-with-glibc2.31', 'python': '3.9.18', 'heartbeatAt': '2023-10-23T09:30:37.187483', 'startedAt': '2023-10-23T09:30:35.124604', 'docker': None, 'cuda': None, 'args': (), 'state': 'running', 'program': '/home/zhx/word/DriverOrderOfflineRL/CQL-SAC/train.py', 'codePathLocal': 'CQL-SAC/train.py', 'codePath': 'CQL-SAC/train.py', 'git': {'remote': 'git@github.com:zhuhxi/DriverOrderOfflineRL.git', 'commit': '0b130e67a664afdb9f9c0447812f4076b3be23c5'}, 'email': 'hongxizhuqiling@gmail.com', 'root': '/home/zhx/word/DriverOrderOfflineRL', 'host': 'amax', 'username': 'zhx', 'executable': '/home/zhx/miniconda3/envs/CQL/bin/python', 'cpu_count': 32, 'cpu_count_logical': 64, 'cpu_freq': {'current': 1401.1722968749998, 'min': 1200.0, 'max': 3900.0}, 'cpu_freq_per_core': [{'current': 1200.033, 'min': 1200.0, 'max': 3900.0}, {'current': 1200.123, 'min': 1200.0, 'max': 3900.0}, {'current': 2712.171, 'min': 1200.0, 'max': 3900.0}, {'current': 1200.451, 'min': 1200.0, 'max': 3900.0}, {'current': 1200.238, 'min': 1200.0, 'max': 3900.0}, {'current': 1305.385, 'min': 1200.0, 'max': 3900.0}, {'current': 1200.157, 'min': 1200.0, 'max': 3900.0}, {'current': 1214.468, 'min': 1200.0, 'max': 3900.0}, {'current': 1201.278, 'min': 1200.0, 'max': 3900.0}, {'current': 1482.6, 'min': 1200.0, 'max': 3900.0}, {'current': 2900.0, 'min': 1200.0, 'max': 3900.0}, {'current': 1437.049, 'min': 1200.0, 'max': 3900.0}, {'current': 1201.121, 'min': 1200.0, 'max': 3900.0}, {'current': 1238.353, 'min': 1200.0, 'max': 3900.0}, {'current': 1779.937, 'min': 1200.0, 'max': 3900.0}, {'current': 1200.712, 'min': 1200.0, 'max': 3900.0}, {'current': 1200.875, 'min': 1200.0, 'max': 3900.0}, {'current': 1201.348, 'min': 1200.0, 'max': 3900.0}, {'current': 1230.466, 'min': 1200.0, 'max': 3900.0}, {'current': 1486.826, 'min': 1200.0, 'max': 3900.0}, {'current': 1230.219, 'min': 1200.0, 'max': 3900.0}, {'current': 1456.478, 'min': 1200.0, 'max': 3900.0}, {'current': 1199.864, 'min': 1200.0, 'max': 3900.0}, {'current': 1514.565, 'min': 1200.0, 'max': 3900.0}, {'current': 1200.985, 'min': 1200.0, 'max': 3900.0}, {'current': 1200.128, 'min': 1200.0, 'max': 3900.0}, {'current': 1200.112, 'min': 1200.0, 'max': 3900.0}, {'current': 1200.486, 'min': 1200.0, 'max': 3900.0}, {'current': 1200.101, 'min': 1200.0, 'max': 3900.0}, {'current': 1283.237, 'min': 1200.0, 'max': 3900.0}, {'current': 1287.185, 'min': 1200.0, 'max': 3900.0}, {'current': 1229.436, 'min': 1200.0, 'max': 3900.0}, {'current': 1200.838, 'min': 1200.0, 'max': 3900.0}, {'current': 1201.057, 'min': 1200.0, 'max': 3900.0}, {'current': 2900.969, 'min': 1200.0, 'max': 3900.0}, {'current': 1200.25, 'min': 1200.0, 'max': 3900.0}, {'current': 1200.725, 'min': 1200.0, 'max': 3900.0}, {'current': 1352.507, 'min': 1200.0, 'max': 3900.0}, {'current': 1199.945, 'min': 1200.0, 'max': 3900.0}, {'current': 1437.191, 'min': 1200.0, 'max': 3900.0}, {'current': 1200.234, 'min': 1200.0, 'max': 3900.0}, {'current': 1417.559, 'min': 1200.0, 'max': 3900.0}, {'current': 2899.772, 'min': 1200.0, 'max': 3900.0}, {'current': 1414.703, 'min': 1200.0, 'max': 3900.0}, {'current': 1200.264, 'min': 1200.0, 'max': 3900.0}, {'current': 1265.477, 'min': 1200.0, 'max': 3900.0}, {'current': 1656.651, 'min': 1200.0, 'max': 3900.0}, {'current': 1200.342, 'min': 1200.0, 'max': 3900.0}, {'current': 1200.981, 'min': 1200.0, 'max': 3900.0}, {'current': 1200.409, 'min': 1200.0, 'max': 3900.0}, {'current': 1200.922, 'min': 1200.0, 'max': 3900.0}, {'current': 1201.253, 'min': 1200.0, 'max': 3900.0}, {'current': 1200.119, 'min': 1200.0, 'max': 3900.0}, {'current': 1262.862, 'min': 1200.0, 'max': 3900.0}, {'current': 1200.165, 'min': 1200.0, 'max': 3900.0}, {'current': 1262.771, 'min': 1200.0, 'max': 3900.0}, {'current': 1200.459, 'min': 1200.0, 'max': 3900.0}, {'current': 1200.927, 'min': 1200.0, 'max': 3900.0}, {'current': 1200.025, 'min': 1200.0, 'max': 3900.0}, {'current': 1200.141, 'min': 1200.0, 'max': 3900.0}, {'current': 1200.598, 'min': 1200.0, 'max': 3900.0}, {'current': 1342.319, 'min': 1200.0, 'max': 3900.0}, {'current': 1205.477, 'min': 1200.0, 'max': 3900.0}, {'current': 1270.147, 'min': 1200.0, 'max': 3900.0}], 'disk': {'/': {'total': 195.8613052368164, 'used': 74.21622467041016}}, 'gpu': 'NVIDIA GeForce RTX 3090', 'gpu_count': 4, 'gpu_devices': [{'name': 'NVIDIA GeForce RTX 3090', 'memory_total': 25769803776}, {'name': 'NVIDIA GeForce RTX 3090', 'memory_total': 25769803776}, {'name': 'NVIDIA GeForce RTX 3090', 'memory_total': 25769803776}, {'name': 'NVIDIA GeForce RTX 3090', 'memory_total': 25769803776}], 'memory': {'total': 251.56553268432617}}
+2023-10-23 17:30:37,217 INFO    HandlerThread:233096 [system_monitor.py:probe():224] Finished collecting system info
+2023-10-23 17:30:37,217 INFO    HandlerThread:233096 [system_monitor.py:probe():227] Publishing system info
+2023-10-23 17:30:37,217 DEBUG   HandlerThread:233096 [system_info.py:_save_pip():52] Saving list of pip packages installed into the current environment
+2023-10-23 17:30:37,217 DEBUG   HandlerThread:233096 [system_info.py:_save_pip():68] Saving pip packages done
+2023-10-23 17:30:37,218 DEBUG   HandlerThread:233096 [system_info.py:_save_conda():75] Saving list of conda packages installed into the current environment
+2023-10-23 17:30:37,799 DEBUG   HandlerThread:233096 [system_info.py:_save_conda():87] Saving conda packages done
+2023-10-23 17:30:37,813 INFO    HandlerThread:233096 [system_monitor.py:probe():229] Finished publishing system info
+2023-10-23 17:30:37,818 DEBUG   SenderThread:233096 [sender.py:send():380] send: files
+2023-10-23 17:30:37,819 INFO    SenderThread:233096 [sender.py:_save_file():1378] saving file wandb-metadata.json with policy now
+2023-10-23 17:30:37,846 INFO    Thread-17 :233096 [dir_watcher.py:_on_file_created():271] file/dir created: /home/zhx/word/DriverOrderOfflineRL/wandb/run-20231023_173035-apt07wny/files/wandb-metadata.json
+2023-10-23 17:30:37,846 DEBUG   HandlerThread:233096 [handler.py:handle_request():146] handle_request: stop_status
+2023-10-23 17:30:37,847 INFO    Thread-17 :233096 [dir_watcher.py:_on_file_created():271] file/dir created: /home/zhx/word/DriverOrderOfflineRL/wandb/run-20231023_173035-apt07wny/files/requirements.txt
+2023-10-23 17:30:37,848 DEBUG   HandlerThread:233096 [handler.py:handle_request():146] handle_request: internal_messages
+2023-10-23 17:30:37,848 DEBUG   SenderThread:233096 [sender.py:send_request():407] send_request: stop_status
+2023-10-23 17:30:37,849 INFO    Thread-17 :233096 [dir_watcher.py:_on_file_created():271] file/dir created: /home/zhx/word/DriverOrderOfflineRL/wandb/run-20231023_173035-apt07wny/files/conda-environment.yaml
+2023-10-23 17:30:38,268 DEBUG   SenderThread:233096 [sender.py:send():380] send: telemetry
+2023-10-23 17:30:38,653 INFO    wandb-upload_0:233096 [upload_job.py:push():131] Uploaded file /tmp/tmpj0ixykiywandb/ipwcf197-wandb-metadata.json
+2023-10-23 17:30:39,644 DEBUG   SenderThread:233096 [sender.py:send():380] send: telemetry
+2023-10-23 17:30:40,645 DEBUG   HandlerThread:233096 [handler.py:handle_request():146] handle_request: status_report
+2023-10-23 17:30:45,646 DEBUG   HandlerThread:233096 [handler.py:handle_request():146] handle_request: status_report
+2023-10-23 17:30:49,845 INFO    Thread-17 :233096 [dir_watcher.py:_on_file_created():271] file/dir created: /home/zhx/word/DriverOrderOfflineRL/wandb/run-20231023_173035-apt07wny/files/output.log
+2023-10-23 17:30:51,117 DEBUG   HandlerThread:233096 [handler.py:handle_request():146] handle_request: status_report
+2023-10-23 17:30:51,847 INFO    Thread-17 :233096 [dir_watcher.py:_on_file_modified():288] file/dir modified: /home/zhx/word/DriverOrderOfflineRL/wandb/run-20231023_173035-apt07wny/files/output.log
+2023-10-23 17:30:52,839 DEBUG   HandlerThread:233096 [handler.py:handle_request():146] handle_request: stop_status
+2023-10-23 17:30:52,840 DEBUG   SenderThread:233096 [sender.py:send_request():407] send_request: stop_status
+2023-10-23 17:30:52,853 DEBUG   HandlerThread:233096 [handler.py:handle_request():146] handle_request: internal_messages
+2023-10-23 17:30:56,122 DEBUG   HandlerThread:233096 [handler.py:handle_request():146] handle_request: status_report
+2023-10-23 17:31:01,123 DEBUG   HandlerThread:233096 [handler.py:handle_request():146] handle_request: status_report
+2023-10-23 17:31:06,129 DEBUG   HandlerThread:233096 [handler.py:handle_request():146] handle_request: status_report
+2023-10-23 17:31:06,867 INFO    Thread-17 :233096 [dir_watcher.py:_on_file_modified():288] file/dir modified: /home/zhx/word/DriverOrderOfflineRL/wandb/run-20231023_173035-apt07wny/files/config.yaml
+2023-10-23 17:31:07,839 DEBUG   HandlerThread:233096 [handler.py:handle_request():146] handle_request: stop_status
+2023-10-23 17:31:07,840 DEBUG   SenderThread:233096 [sender.py:send_request():407] send_request: stop_status
+2023-10-23 17:31:07,848 DEBUG   HandlerThread:233096 [handler.py:handle_request():146] handle_request: internal_messages
+2023-10-23 17:31:12,160 DEBUG   HandlerThread:233096 [handler.py:handle_request():146] handle_request: status_report
+2023-10-23 17:31:17,161 DEBUG   HandlerThread:233096 [handler.py:handle_request():146] handle_request: status_report
+2023-10-23 17:31:22,163 DEBUG   HandlerThread:233096 [handler.py:handle_request():146] handle_request: status_report
+2023-10-23 17:31:22,839 DEBUG   HandlerThread:233096 [handler.py:handle_request():146] handle_request: stop_status
+2023-10-23 17:31:22,840 DEBUG   SenderThread:233096 [sender.py:send_request():407] send_request: stop_status
+2023-10-23 17:31:22,883 DEBUG   HandlerThread:233096 [handler.py:handle_request():146] handle_request: internal_messages
+2023-10-23 17:31:28,064 DEBUG   HandlerThread:233096 [handler.py:handle_request():146] handle_request: status_report
+2023-10-23 17:31:33,065 DEBUG   HandlerThread:233096 [handler.py:handle_request():146] handle_request: status_report
+2023-10-23 17:31:37,115 DEBUG   SystemMonitor:233096 [system_monitor.py:_start():172] Starting system metrics aggregation loop
+2023-10-23 17:31:37,125 DEBUG   SenderThread:233096 [sender.py:send():380] send: stats
+2023-10-23 17:31:37,840 DEBUG   HandlerThread:233096 [handler.py:handle_request():146] handle_request: stop_status
+2023-10-23 17:31:37,841 DEBUG   SenderThread:233096 [sender.py:send_request():407] send_request: stop_status
+2023-10-23 17:31:37,849 DEBUG   HandlerThread:233096 [handler.py:handle_request():146] handle_request: internal_messages
+2023-10-23 17:31:38,069 DEBUG   HandlerThread:233096 [handler.py:handle_request():146] handle_request: status_report
+2023-10-23 17:31:43,071 DEBUG   HandlerThread:233096 [handler.py:handle_request():146] handle_request: status_report

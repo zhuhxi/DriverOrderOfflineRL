@@ -16,7 +16,7 @@ from agent import CQLAgent
 def get_config():
     parser = argparse.ArgumentParser(description='RL')
     parser.add_argument("--run_name", type=str, default="CQL-DQN", help="Run name, default: CQL-DQN")
-    parser.add_argument("--env", type=str, default="CartPole-v0", help="Gym environment name, default: CartPole-v0")
+    parser.add_argument("--env", type=str, default="AirRaid-v4", help="Gym environment name, default: CartPole-v0")
     parser.add_argument("--episodes", type=int, default=400, help="Number of episodes, default: 200")
     parser.add_argument("--buffer_size", type=int, default=100_000, help="Maximal training dataset size, default: 100_000")
     parser.add_argument("--seed", type=int, default=1, help="Seed, default: 1")

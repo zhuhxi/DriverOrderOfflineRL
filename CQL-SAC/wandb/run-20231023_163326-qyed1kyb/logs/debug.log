@@ -1,0 +1,51 @@
+2023-10-23 16:33:26,279 INFO    MainThread:4149687 [wandb_setup.py:_flush():76] Current SDK version is 0.15.12
+2023-10-23 16:33:26,279 INFO    MainThread:4149687 [wandb_setup.py:_flush():76] Configure stats pid to 4149687
+2023-10-23 16:33:26,279 INFO    MainThread:4149687 [wandb_setup.py:_flush():76] Loading settings from /home/zhx/.config/wandb/settings
+2023-10-23 16:33:26,279 INFO    MainThread:4149687 [wandb_setup.py:_flush():76] Loading settings from /home/zhx/word/DriverOrderOfflineRL/CQL-SAC/wandb/settings
+2023-10-23 16:33:26,280 INFO    MainThread:4149687 [wandb_setup.py:_flush():76] Loading settings from environment variables: {}
+2023-10-23 16:33:26,280 INFO    MainThread:4149687 [wandb_setup.py:_flush():76] Applying setup settings: {'_disable_service': False}
+2023-10-23 16:33:26,280 INFO    MainThread:4149687 [wandb_setup.py:_flush():76] Inferring run settings from compute environment: {'program_relpath': 'CQL-SAC/train.py', 'program_abspath': '/home/zhx/word/DriverOrderOfflineRL/CQL-SAC/train.py', 'program': 'train.py'}
+2023-10-23 16:33:26,280 INFO    MainThread:4149687 [wandb_init.py:_log_setup():528] Logging user logs to /home/zhx/word/DriverOrderOfflineRL/CQL-SAC/wandb/run-20231023_163326-qyed1kyb/logs/debug.log
+2023-10-23 16:33:26,280 INFO    MainThread:4149687 [wandb_init.py:_log_setup():529] Logging internal logs to /home/zhx/word/DriverOrderOfflineRL/CQL-SAC/wandb/run-20231023_163326-qyed1kyb/logs/debug-internal.log
+2023-10-23 16:33:26,280 INFO    MainThread:4149687 [wandb_init.py:init():568] calling init triggers
+2023-10-23 16:33:26,280 INFO    MainThread:4149687 [wandb_init.py:init():576] wandb.init called with sweep_config: {}
+config: {'run_name': 'CQL-SAC', 'env': 'Pendulum-v0', 'episodes': 300, 'buffer_size': 100000, 'seed': 1, 'log_video': 0, 'save_every': 100, 'batch_size': 256, 'hidden_size': 256, 'learning_rate': 0.0003, 'temperature': 1.0, 'cql_weight': 1.0, 'target_action_gap': 10, 'with_lagrange': 0, 'tau': 0.005, 'eval_every': 1}
+2023-10-23 16:33:26,280 INFO    MainThread:4149687 [wandb_init.py:init():618] starting backend
+2023-10-23 16:33:26,280 INFO    MainThread:4149687 [wandb_init.py:init():622] setting up manager
+2023-10-23 16:33:26,283 INFO    MainThread:4149687 [backend.py:_multiprocessing_setup():107] multiprocessing start_methods=fork,spawn,forkserver, using: spawn
+2023-10-23 16:33:26,284 INFO    MainThread:4149687 [wandb_init.py:init():628] backend started and connected
+2023-10-23 16:33:26,286 INFO    MainThread:4149687 [wandb_init.py:init():720] updated telemetry
+2023-10-23 16:33:26,304 INFO    MainThread:4149687 [wandb_init.py:init():753] communicating run to backend with 90.0 second timeout
+2023-10-23 16:33:27,155 INFO    MainThread:4149687 [wandb_run.py:_on_init():2220] communicating current version
+2023-10-23 16:33:28,353 INFO    MainThread:4149687 [wandb_run.py:_on_init():2229] got version response 
+2023-10-23 16:33:28,353 INFO    MainThread:4149687 [wandb_init.py:init():804] starting run threads in backend
+2023-10-23 16:33:50,312 WARNING MsgRouterThr:4149687 [router.py:message_loop():77] message_loop has been closed
+2023-10-23 16:33:58,382 INFO    MainThread:4149687 [wandb_run.py:_console_start():2199] atexit reg
+2023-10-23 16:33:58,382 INFO    MainThread:4149687 [wandb_run.py:_redirect():2054] redirect: wrap_raw
+2023-10-23 16:33:58,382 INFO    MainThread:4149687 [wandb_run.py:_redirect():2119] Wrapping output streams.
+2023-10-23 16:33:58,383 INFO    MainThread:4149687 [wandb_run.py:_redirect():2144] Redirects installed.
+2023-10-23 16:33:58,542 ERROR   MainThread:4149687 [wandb_init.py:init():1198] error
+Traceback (most recent call last):
+  File "/home/zhx/miniconda3/envs/CrossDQN/lib/python3.7/site-packages/wandb/sdk/wandb_init.py", line 1170, in init
+    run = wi.init()
+  File "/home/zhx/miniconda3/envs/CrossDQN/lib/python3.7/site-packages/wandb/sdk/wandb_init.py", line 844, in init
+    run._on_start()
+  File "/home/zhx/miniconda3/envs/CrossDQN/lib/python3.7/site-packages/wandb/sdk/wandb_run.py", line 2252, in _on_start
+    self._on_ready()
+  File "/home/zhx/miniconda3/envs/CrossDQN/lib/python3.7/site-packages/wandb/sdk/wandb_run.py", line 2293, in _on_ready
+    self._telemetry_flush()
+  File "/home/zhx/miniconda3/envs/CrossDQN/lib/python3.7/site-packages/wandb/sdk/wandb_run.py", line 754, in _telemetry_flush
+    self._backend.interface._publish_telemetry(self._telemetry_obj)
+  File "/home/zhx/miniconda3/envs/CrossDQN/lib/python3.7/site-packages/wandb/sdk/interface/interface_shared.py", line 101, in _publish_telemetry
+    self._publish(rec)
+  File "/home/zhx/miniconda3/envs/CrossDQN/lib/python3.7/site-packages/wandb/sdk/interface/interface_sock.py", line 51, in _publish
+    self._sock_client.send_record_publish(record)
+  File "/home/zhx/miniconda3/envs/CrossDQN/lib/python3.7/site-packages/wandb/sdk/lib/sock_client.py", line 221, in send_record_publish
+    self.send_server_request(server_req)
+  File "/home/zhx/miniconda3/envs/CrossDQN/lib/python3.7/site-packages/wandb/sdk/lib/sock_client.py", line 155, in send_server_request
+    self._send_message(msg)
+  File "/home/zhx/miniconda3/envs/CrossDQN/lib/python3.7/site-packages/wandb/sdk/lib/sock_client.py", line 152, in _send_message
+    self._sendall_with_error_handle(header + data)
+  File "/home/zhx/miniconda3/envs/CrossDQN/lib/python3.7/site-packages/wandb/sdk/lib/sock_client.py", line 130, in _sendall_with_error_handle
+    sent = self._sock.send(data)
+BrokenPipeError: [Errno 32] Broken pipe

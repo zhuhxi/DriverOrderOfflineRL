@@ -1,0 +1,4 @@
+Traceback (most recent call last):
+  File "/tmp-data/zhx/DriverOrderOfflineRL/CQL-DQN/train.py", line 76, in train
+    if done:
+NameError: name 'done' is not defined

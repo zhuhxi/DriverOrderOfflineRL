@@ -1,0 +1,8 @@
+/home/zhx/miniconda3/envs/CQL/lib/python3.9/site-packages/gym/utils/passive_env_checker.py:233: DeprecationWarning: `np.bool8` is a deprecated alias for `np.bool_`.  (Deprecated NumPy 1.24)
+  if not isinstance(terminated, (bool, np.bool8)):
+Traceback (most recent call last):
+  File "/home/zhx/word/DriverOrderOfflineRL/CQL-SAC/train.py", line 72, in train
+    collect_random(env=env, dataset=buffer, num_samples=10000)
+  File "/home/zhx/word/DriverOrderOfflineRL/CQL-SAC/utils.py", line 21, in collect_random
+    dataset.add(state, action, reward, next_state, done, truncated)
+TypeError: add() takes 6 positional arguments but 7 were given

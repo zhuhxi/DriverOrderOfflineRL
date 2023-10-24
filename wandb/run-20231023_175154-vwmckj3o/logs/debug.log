@@ -1,0 +1,34 @@
+2023-10-23 17:51:54,715 INFO    MainThread:339630 [wandb_setup.py:_flush():76] Current SDK version is 0.15.12
+2023-10-23 17:51:54,715 INFO    MainThread:339630 [wandb_setup.py:_flush():76] Configure stats pid to 339630
+2023-10-23 17:51:54,715 INFO    MainThread:339630 [wandb_setup.py:_flush():76] Loading settings from /home/zhx/.config/wandb/settings
+2023-10-23 17:51:54,715 INFO    MainThread:339630 [wandb_setup.py:_flush():76] Loading settings from /home/zhx/word/DriverOrderOfflineRL/wandb/settings
+2023-10-23 17:51:54,715 INFO    MainThread:339630 [wandb_setup.py:_flush():76] Loading settings from environment variables: {}
+2023-10-23 17:51:54,715 INFO    MainThread:339630 [wandb_setup.py:_flush():76] Applying setup settings: {'_disable_service': False}
+2023-10-23 17:51:54,715 INFO    MainThread:339630 [wandb_setup.py:_flush():76] Inferring run settings from compute environment: {'program_relpath': 'CQL-SAC/train.py', 'program_abspath': '/home/zhx/word/DriverOrderOfflineRL/CQL-SAC/train.py', 'program': '/home/zhx/word/DriverOrderOfflineRL/CQL-SAC/train.py'}
+2023-10-23 17:51:54,716 INFO    MainThread:339630 [wandb_init.py:_log_setup():528] Logging user logs to /home/zhx/word/DriverOrderOfflineRL/wandb/run-20231023_175154-vwmckj3o/logs/debug.log
+2023-10-23 17:51:54,716 INFO    MainThread:339630 [wandb_init.py:_log_setup():529] Logging internal logs to /home/zhx/word/DriverOrderOfflineRL/wandb/run-20231023_175154-vwmckj3o/logs/debug-internal.log
+2023-10-23 17:51:54,716 INFO    MainThread:339630 [wandb_init.py:init():568] calling init triggers
+2023-10-23 17:51:54,716 INFO    MainThread:339630 [wandb_init.py:init():575] wandb.init called with sweep_config: {}
+config: {'run_name': 'CQL-SAC', 'env': 'Pendulum-v1', 'episodes': 300, 'buffer_size': 100000, 'seed': 1, 'log_video': 0, 'save_every': 100, 'batch_size': 256, 'hidden_size': 256, 'learning_rate': 0.0003, 'temperature': 1.0, 'cql_weight': 1.0, 'target_action_gap': 10, 'with_lagrange': 0, 'tau': 0.005, 'eval_every': 1}
+2023-10-23 17:51:54,717 INFO    MainThread:339630 [wandb_init.py:init():618] starting backend
+2023-10-23 17:51:54,717 INFO    MainThread:339630 [wandb_init.py:init():622] setting up manager
+2023-10-23 17:51:54,720 INFO    MainThread:339630 [backend.py:_multiprocessing_setup():105] multiprocessing start_methods=fork,spawn,forkserver, using: spawn
+2023-10-23 17:51:54,723 INFO    MainThread:339630 [wandb_init.py:init():628] backend started and connected
+2023-10-23 17:51:54,729 INFO    MainThread:339630 [wandb_init.py:init():720] updated telemetry
+2023-10-23 17:51:54,777 INFO    MainThread:339630 [wandb_init.py:init():753] communicating run to backend with 90.0 second timeout
+2023-10-23 17:51:55,559 INFO    MainThread:339630 [wandb_run.py:_on_init():2220] communicating current version
+2023-10-23 17:51:56,576 INFO    MainThread:339630 [wandb_run.py:_on_init():2229] got version response 
+2023-10-23 17:51:56,576 INFO    MainThread:339630 [wandb_init.py:init():804] starting run threads in backend
+2023-10-23 17:51:57,319 INFO    MainThread:339630 [wandb_run.py:_console_start():2199] atexit reg
+2023-10-23 17:51:57,319 INFO    MainThread:339630 [wandb_run.py:_redirect():2054] redirect: wrap_raw
+2023-10-23 17:51:57,320 INFO    MainThread:339630 [wandb_run.py:_redirect():2119] Wrapping output streams.
+2023-10-23 17:51:57,321 INFO    MainThread:339630 [wandb_run.py:_redirect():2144] Redirects installed.
+2023-10-23 17:51:57,322 INFO    MainThread:339630 [wandb_init.py:init():845] run started, returning control to user process
+2023-10-23 17:51:59,106 INFO    MainThread:339630 [wandb_watch.py:watch():51] Watching
+2023-10-23 17:52:44,214 INFO    MainThread:339630 [wandb_run.py:_finish():1934] finishing run hongxi/CQL/vwmckj3o
+2023-10-23 17:52:44,214 INFO    MainThread:339630 [wandb_run.py:_atexit_cleanup():2168] got exitcode: 1
+2023-10-23 17:52:44,218 INFO    MainThread:339630 [wandb_run.py:_restore():2151] restore
+2023-10-23 17:52:44,218 INFO    MainThread:339630 [wandb_run.py:_restore():2157] restore done
+2023-10-23 17:52:54,285 INFO    MainThread:339630 [wandb_run.py:_footer_history_summary_info():3599] rendering history
+2023-10-23 17:52:54,286 INFO    MainThread:339630 [wandb_run.py:_footer_history_summary_info():3631] rendering summary
+2023-10-23 17:52:54,302 INFO    MainThread:339630 [wandb_run.py:_footer_sync_info():3558] logging synced files

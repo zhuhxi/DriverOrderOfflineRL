@@ -1,9 +1,0 @@
-2023-10-23 17:33:59,214 INFO    StreamThr :250821 [internal.py:wandb_internal():86] W&B internal server running at pid: 250821, started at: 2023-10-23 17:33:59.211988
-2023-10-23 17:33:59,229 DEBUG   HandlerThread:250821 [handler.py:handle_request():146] handle_request: status
-2023-10-23 17:33:59,235 INFO    WriterThread:250821 [datastore.py:open_for_write():85] open: /home/zhx/word/DriverOrderOfflineRL/wandb/run-20231023_173359-wtmdyeh3/run-wtmdyeh3.wandb
-2023-10-23 17:33:59,237 DEBUG   SenderThread:250821 [sender.py:send():380] send: header
-2023-10-23 17:33:59,273 DEBUG   SenderThread:250821 [sender.py:send():380] send: run
-2023-10-23 17:33:59,982 INFO    SenderThread:250821 [dir_watcher.py:__init__():211] watching files in: /home/zhx/word/DriverOrderOfflineRL/wandb/run-20231023_173359-wtmdyeh3/files
-2023-10-23 17:33:59,982 INFO    SenderThread:250821 [sender.py:_start_run_threads():1122] run started: wtmdyeh3 with start time 1698053639.207508
-2023-10-23 17:34:00,010 DEBUG   HandlerThread:250821 [handler.py:handle_request():146] handle_request: check_version
-2023-10-23 17:34:00,011 DEBUG   SenderThread:250821 [sender.py:send_request():407] send_request: check_version

@@ -1,0 +1,79 @@
+2023-10-23 17:37:02,751 INFO    StreamThr :266361 [internal.py:wandb_internal():86] W&B internal server running at pid: 266361, started at: 2023-10-23 17:37:02.750057
+2023-10-23 17:37:02,753 DEBUG   HandlerThread:266361 [handler.py:handle_request():146] handle_request: status
+2023-10-23 17:37:02,755 INFO    WriterThread:266361 [datastore.py:open_for_write():85] open: /home/zhx/word/DriverOrderOfflineRL/CQL-SAC/wandb/run-20231023_173702-v6r5ewhw/run-v6r5ewhw.wandb
+2023-10-23 17:37:02,758 DEBUG   SenderThread:266361 [sender.py:send():380] send: header
+2023-10-23 17:37:02,800 DEBUG   SenderThread:266361 [sender.py:send():380] send: run
+2023-10-23 17:37:03,405 INFO    SenderThread:266361 [dir_watcher.py:__init__():211] watching files in: /home/zhx/word/DriverOrderOfflineRL/CQL-SAC/wandb/run-20231023_173702-v6r5ewhw/files
+2023-10-23 17:37:03,406 INFO    SenderThread:266361 [sender.py:_start_run_threads():1122] run started: v6r5ewhw with start time 1698053822.749742
+2023-10-23 17:37:03,418 DEBUG   HandlerThread:266361 [handler.py:handle_request():146] handle_request: check_version
+2023-10-23 17:37:03,418 DEBUG   SenderThread:266361 [sender.py:send_request():407] send_request: check_version
+2023-10-23 17:37:04,632 DEBUG   HandlerThread:266361 [handler.py:handle_request():146] handle_request: run_start
+2023-10-23 17:37:04,648 DEBUG   HandlerThread:266361 [system_info.py:__init__():32] System info init
+2023-10-23 17:37:04,648 DEBUG   HandlerThread:266361 [system_info.py:__init__():47] System info init done
+2023-10-23 17:37:04,648 INFO    HandlerThread:266361 [system_monitor.py:start():194] Starting system monitor
+2023-10-23 17:37:04,648 INFO    SystemMonitor:266361 [system_monitor.py:_start():158] Starting system asset monitoring threads
+2023-10-23 17:37:04,650 INFO    HandlerThread:266361 [system_monitor.py:probe():214] Collecting system info
+2023-10-23 17:37:04,650 INFO    SystemMonitor:266361 [interfaces.py:start():190] Started cpu monitoring
+2023-10-23 17:37:04,651 INFO    SystemMonitor:266361 [interfaces.py:start():190] Started disk monitoring
+2023-10-23 17:37:04,652 INFO    SystemMonitor:266361 [interfaces.py:start():190] Started gpu monitoring
+2023-10-23 17:37:04,653 INFO    SystemMonitor:266361 [interfaces.py:start():190] Started memory monitoring
+2023-10-23 17:37:04,655 INFO    SystemMonitor:266361 [interfaces.py:start():190] Started network monitoring
+2023-10-23 17:37:04,706 DEBUG   HandlerThread:266361 [system_info.py:probe():196] Probing system
+2023-10-23 17:37:04,714 DEBUG   HandlerThread:266361 [system_info.py:_probe_git():181] Probing git
+2023-10-23 17:37:04,729 DEBUG   HandlerThread:266361 [system_info.py:_probe_git():189] Probing git done
+2023-10-23 17:37:04,729 DEBUG   HandlerThread:266361 [system_info.py:probe():244] Probing system done
+2023-10-23 17:37:04,730 DEBUG   HandlerThread:266361 [system_monitor.py:probe():223] {'os': 'Linux-5.4.0-121-generic-x86_64-with-glibc2.31', 'python': '3.9.18', 'heartbeatAt': '2023-10-23T09:37:04.706945', 'startedAt': '2023-10-23T09:37:02.743484', 'docker': None, 'cuda': None, 'args': (), 'state': 'running', 'program': '/home/zhx/word/DriverOrderOfflineRL/CQL-SAC/train.py', 'codePathLocal': 'train.py', 'codePath': 'CQL-SAC/train.py', 'git': {'remote': 'git@github.com:zhuhxi/DriverOrderOfflineRL.git', 'commit': '2926a9b1bc69ce5ee5c0f1a06b6d438bec5cbe6c'}, 'email': 'hongxizhuqiling@gmail.com', 'root': '/home/zhx/word/DriverOrderOfflineRL', 'host': 'amax', 'username': 'zhx', 'executable': '/home/zhx/miniconda3/envs/CQL/bin/python', 'cpu_count': 32, 'cpu_count_logical': 64, 'cpu_freq': {'current': 1243.4269062499998, 'min': 1200.0, 'max': 3900.0}, 'cpu_freq_per_core': [{'current': 1200.033, 'min': 1200.0, 'max': 3900.0}, {'current': 1200.082, 'min': 1200.0, 'max': 3900.0}, {'current': 1200.318, 'min': 1200.0, 'max': 3900.0}, {'current': 1201.526, 'min': 1200.0, 'max': 3900.0}, {'current': 1200.227, 'min': 1200.0, 'max': 3900.0}, {'current': 1200.615, 'min': 1200.0, 'max': 3900.0}, {'current': 1200.585, 'min': 1200.0, 'max': 3900.0}, {'current': 1200.477, 'min': 1200.0, 'max': 3900.0}, {'current': 1201.077, 'min': 1200.0, 'max': 3900.0}, {'current': 1200.505, 'min': 1200.0, 'max': 3900.0}, {'current': 1200.328, 'min': 1200.0, 'max': 3900.0}, {'current': 1201.261, 'min': 1200.0, 'max': 3900.0}, {'current': 1200.682, 'min': 1200.0, 'max': 3900.0}, {'current': 1594.417, 'min': 1200.0, 'max': 3900.0}, {'current': 1200.306, 'min': 1200.0, 'max': 3900.0}, {'current': 1201.072, 'min': 1200.0, 'max': 3900.0}, {'current': 1200.3, 'min': 1200.0, 'max': 3900.0}, {'current': 1201.07, 'min': 1200.0, 'max': 3900.0}, {'current': 1200.158, 'min': 1200.0, 'max': 3900.0}, {'current': 1953.393, 'min': 1200.0, 'max': 3900.0}, {'current': 1200.926, 'min': 1200.0, 'max': 3900.0}, {'current': 1200.365, 'min': 1200.0, 'max': 3900.0}, {'current': 1201.72, 'min': 1200.0, 'max': 3900.0}, {'current': 1348.909, 'min': 1200.0, 'max': 3900.0}, {'current': 1630.511, 'min': 1200.0, 'max': 3900.0}, {'current': 1200.242, 'min': 1200.0, 'max': 3900.0}, {'current': 1200.022, 'min': 1200.0, 'max': 3900.0}, {'current': 1200.187, 'min': 1200.0, 'max': 3900.0}, {'current': 1200.701, 'min': 1200.0, 'max': 3900.0}, {'current': 1199.934, 'min': 1200.0, 'max': 3900.0}, {'current': 1200.667, 'min': 1200.0, 'max': 3900.0}, {'current': 1200.484, 'min': 1200.0, 'max': 3900.0}, {'current': 1200.141, 'min': 1200.0, 'max': 3900.0}, {'current': 1200.069, 'min': 1200.0, 'max': 3900.0}, {'current': 1200.508, 'min': 1200.0, 'max': 3900.0}, {'current': 1200.092, 'min': 1200.0, 'max': 3900.0}, {'current': 1200.357, 'min': 1200.0, 'max': 3900.0}, {'current': 1200.566, 'min': 1200.0, 'max': 3900.0}, {'current': 1200.466, 'min': 1200.0, 'max': 3900.0}, {'current': 1201.322, 'min': 1200.0, 'max': 3900.0}, {'current': 1200.767, 'min': 1200.0, 'max': 3900.0}, {'current': 1200.389, 'min': 1200.0, 'max': 3900.0}, {'current': 1200.158, 'min': 1200.0, 'max': 3900.0}, {'current': 1200.355, 'min': 1200.0, 'max': 3900.0}, {'current': 1200.848, 'min': 1200.0, 'max': 3900.0}, {'current': 1628.529, 'min': 1200.0, 'max': 3900.0}, {'current': 1202.496, 'min': 1200.0, 'max': 3900.0}, {'current': 1200.059, 'min': 1200.0, 'max': 3900.0}, {'current': 1201.07, 'min': 1200.0, 'max': 3900.0}, {'current': 1200.482, 'min': 1200.0, 'max': 3900.0}, {'current': 1201.381, 'min': 1200.0, 'max': 3900.0}, {'current': 2107.004, 'min': 1200.0, 'max': 3900.0}, {'current': 1200.133, 'min': 1200.0, 'max': 3900.0}, {'current': 1200.651, 'min': 1200.0, 'max': 3900.0}, {'current': 1200.064, 'min': 1200.0, 'max': 3900.0}, {'current': 1200.135, 'min': 1200.0, 'max': 3900.0}, {'current': 2868.057, 'min': 1200.0, 'max': 3900.0}, {'current': 1200.353, 'min': 1200.0, 'max': 3900.0}, {'current': 1200.63, 'min': 1200.0, 'max': 3900.0}, {'current': 1200.337, 'min': 1200.0, 'max': 3900.0}, {'current': 1200.642, 'min': 1200.0, 'max': 3900.0}, {'current': 1200.679, 'min': 1200.0, 'max': 3900.0}, {'current': 1200.526, 'min': 1200.0, 'max': 3900.0}, {'current': 1201.467, 'min': 1200.0, 'max': 3900.0}], 'disk': {'/': {'total': 195.8613052368164, 'used': 74.2339859008789}}, 'gpu': 'NVIDIA GeForce RTX 3090', 'gpu_count': 4, 'gpu_devices': [{'name': 'NVIDIA GeForce RTX 3090', 'memory_total': 25769803776}, {'name': 'NVIDIA GeForce RTX 3090', 'memory_total': 25769803776}, {'name': 'NVIDIA GeForce RTX 3090', 'memory_total': 25769803776}, {'name': 'NVIDIA GeForce RTX 3090', 'memory_total': 25769803776}], 'memory': {'total': 251.56553268432617}}
+2023-10-23 17:37:04,730 INFO    HandlerThread:266361 [system_monitor.py:probe():224] Finished collecting system info
+2023-10-23 17:37:04,730 INFO    HandlerThread:266361 [system_monitor.py:probe():227] Publishing system info
+2023-10-23 17:37:04,730 DEBUG   HandlerThread:266361 [system_info.py:_save_pip():52] Saving list of pip packages installed into the current environment
+2023-10-23 17:37:04,730 DEBUG   HandlerThread:266361 [system_info.py:_save_pip():68] Saving pip packages done
+2023-10-23 17:37:04,730 DEBUG   HandlerThread:266361 [system_info.py:_save_conda():75] Saving list of conda packages installed into the current environment
+2023-10-23 17:37:05,410 INFO    Thread-12 :266361 [dir_watcher.py:_on_file_created():271] file/dir created: /home/zhx/word/DriverOrderOfflineRL/CQL-SAC/wandb/run-20231023_173702-v6r5ewhw/files/conda-environment.yaml
+2023-10-23 17:37:05,411 INFO    Thread-12 :266361 [dir_watcher.py:_on_file_created():271] file/dir created: /home/zhx/word/DriverOrderOfflineRL/CQL-SAC/wandb/run-20231023_173702-v6r5ewhw/files/requirements.txt
+2023-10-23 17:37:06,892 DEBUG   HandlerThread:266361 [system_info.py:_save_conda():87] Saving conda packages done
+2023-10-23 17:37:06,894 INFO    HandlerThread:266361 [system_monitor.py:probe():229] Finished publishing system info
+2023-10-23 17:37:06,898 DEBUG   SenderThread:266361 [sender.py:send():380] send: files
+2023-10-23 17:37:06,899 INFO    SenderThread:266361 [sender.py:_save_file():1378] saving file wandb-metadata.json with policy now
+2023-10-23 17:37:06,908 DEBUG   HandlerThread:266361 [handler.py:handle_request():146] handle_request: stop_status
+2023-10-23 17:37:06,909 DEBUG   SenderThread:266361 [sender.py:send_request():407] send_request: stop_status
+2023-10-23 17:37:06,912 DEBUG   HandlerThread:266361 [handler.py:handle_request():146] handle_request: internal_messages
+2023-10-23 17:37:07,297 DEBUG   SenderThread:266361 [sender.py:send():380] send: telemetry
+2023-10-23 17:37:07,408 INFO    Thread-12 :266361 [dir_watcher.py:_on_file_modified():288] file/dir modified: /home/zhx/word/DriverOrderOfflineRL/CQL-SAC/wandb/run-20231023_173702-v6r5ewhw/files/conda-environment.yaml
+2023-10-23 17:37:07,408 INFO    Thread-12 :266361 [dir_watcher.py:_on_file_created():271] file/dir created: /home/zhx/word/DriverOrderOfflineRL/CQL-SAC/wandb/run-20231023_173702-v6r5ewhw/files/wandb-metadata.json
+2023-10-23 17:37:08,219 DEBUG   SenderThread:266361 [sender.py:send():380] send: telemetry
+2023-10-23 17:37:08,220 DEBUG   HandlerThread:266361 [handler.py:handle_request():146] handle_request: status_report
+2023-10-23 17:37:08,326 INFO    wandb-upload_0:266361 [upload_job.py:push():131] Uploaded file /tmp/tmpwvs_adcmwandb/91113u9m-wandb-metadata.json
+2023-10-23 17:37:08,408 INFO    Thread-12 :266361 [dir_watcher.py:_on_file_created():271] file/dir created: /home/zhx/word/DriverOrderOfflineRL/CQL-SAC/wandb/run-20231023_173702-v6r5ewhw/files/output.log
+2023-10-23 17:37:10,409 INFO    Thread-12 :266361 [dir_watcher.py:_on_file_modified():288] file/dir modified: /home/zhx/word/DriverOrderOfflineRL/CQL-SAC/wandb/run-20231023_173702-v6r5ewhw/files/output.log
+2023-10-23 17:37:13,223 DEBUG   HandlerThread:266361 [handler.py:handle_request():146] handle_request: status_report
+2023-10-23 17:37:18,224 DEBUG   HandlerThread:266361 [handler.py:handle_request():146] handle_request: status_report
+2023-10-23 17:37:21,910 DEBUG   HandlerThread:266361 [handler.py:handle_request():146] handle_request: stop_status
+2023-10-23 17:37:21,910 DEBUG   HandlerThread:266361 [handler.py:handle_request():146] handle_request: internal_messages
+2023-10-23 17:37:21,911 DEBUG   SenderThread:266361 [sender.py:send_request():407] send_request: stop_status
+2023-10-23 17:37:24,140 DEBUG   HandlerThread:266361 [handler.py:handle_request():146] handle_request: status_report
+2023-10-23 17:37:29,141 DEBUG   HandlerThread:266361 [handler.py:handle_request():146] handle_request: status_report
+2023-10-23 17:37:34,149 DEBUG   HandlerThread:266361 [handler.py:handle_request():146] handle_request: status_report
+2023-10-23 17:37:35,420 INFO    Thread-12 :266361 [dir_watcher.py:_on_file_modified():288] file/dir modified: /home/zhx/word/DriverOrderOfflineRL/CQL-SAC/wandb/run-20231023_173702-v6r5ewhw/files/config.yaml
+2023-10-23 17:37:36,910 DEBUG   HandlerThread:266361 [handler.py:handle_request():146] handle_request: stop_status
+2023-10-23 17:37:36,911 DEBUG   HandlerThread:266361 [handler.py:handle_request():146] handle_request: internal_messages
+2023-10-23 17:37:36,911 DEBUG   SenderThread:266361 [sender.py:send_request():407] send_request: stop_status
+2023-10-23 17:37:40,178 DEBUG   HandlerThread:266361 [handler.py:handle_request():146] handle_request: status_report
+2023-10-23 17:37:45,179 DEBUG   HandlerThread:266361 [handler.py:handle_request():146] handle_request: status_report
+2023-10-23 17:37:50,180 DEBUG   HandlerThread:266361 [handler.py:handle_request():146] handle_request: status_report
+2023-10-23 17:37:51,910 DEBUG   HandlerThread:266361 [handler.py:handle_request():146] handle_request: stop_status
+2023-10-23 17:37:51,910 DEBUG   SenderThread:266361 [sender.py:send_request():407] send_request: stop_status
+2023-10-23 17:37:51,951 DEBUG   HandlerThread:266361 [handler.py:handle_request():146] handle_request: internal_messages
+2023-10-23 17:37:56,149 DEBUG   HandlerThread:266361 [handler.py:handle_request():146] handle_request: status_report
+2023-10-23 17:38:01,150 DEBUG   HandlerThread:266361 [handler.py:handle_request():146] handle_request: status_report
+2023-10-23 17:38:04,655 DEBUG   SystemMonitor:266361 [system_monitor.py:_start():172] Starting system metrics aggregation loop
+2023-10-23 17:38:04,659 DEBUG   SenderThread:266361 [sender.py:send():380] send: stats
+2023-10-23 17:38:06,662 DEBUG   HandlerThread:266361 [handler.py:handle_request():146] handle_request: status_report
+2023-10-23 17:38:06,910 DEBUG   HandlerThread:266361 [handler.py:handle_request():146] handle_request: stop_status
+2023-10-23 17:38:06,910 DEBUG   HandlerThread:266361 [handler.py:handle_request():146] handle_request: internal_messages
+2023-10-23 17:38:06,911 DEBUG   SenderThread:266361 [sender.py:send_request():407] send_request: stop_status
+2023-10-23 17:38:10,690 INFO    memory    :266361 [interfaces.py:monitor():140] Process proc.memory.rssMB has exited.
+2023-10-23 17:38:10,690 DEBUG   SystemMonitor:266361 [system_monitor.py:_start():179] Finished system metrics aggregation loop
+2023-10-23 17:38:10,692 DEBUG   SystemMonitor:266361 [system_monitor.py:_start():183] Publishing last batch of metrics
+2023-10-23 17:38:10,696 DEBUG   SenderThread:266361 [sender.py:send():380] send: stats
+2023-10-23 17:38:11,649 INFO    MainThread:266361 [internal.py:handle_exit():76] Internal process exited
+2023-10-23 17:38:11,698 DEBUG   HandlerThread:266361 [handler.py:handle_request():146] handle_request: status_report

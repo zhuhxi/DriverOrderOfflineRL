@@ -69,7 +69,7 @@ def train(config):
 
         buffer = ReplayBuffer(buffer_size=config.buffer_size, batch_size=config.batch_size, device=device)
         
-        collect_random(env=env, dataset=buffer, num_samples=10000)
+        collect_random(env=env, dataset=buffer, num_samples=100000)
         
         if config.log_video:
             env = gym.wrappers.Monitor(env, './video', video_callable=lambda x: x%10==0, force=True)
@@ -79,11 +79,11 @@ def train(config):
             state = env.reset()
             episode_steps = 0
             rewards = 0
-            while True:
+            for eval_step in range(200):
                 action = agent.get_action(state)
                 steps += 1
-                next_state, reward, done, _ = env.step(action)
-                buffer.add(state, action, reward, next_state, done)
+                next_state, reward, done,  _ = env.step(action)
+                # buffer.add(state, action, reward, next_state, done)
                 policy_loss, alpha_loss, bellmann_error1, bellmann_error2, cql1_loss, cql2_loss, current_alpha, lagrange_alpha_loss, lagrange_alpha = agent.learn(buffer.sample())
                 state = next_state
                 rewards += reward

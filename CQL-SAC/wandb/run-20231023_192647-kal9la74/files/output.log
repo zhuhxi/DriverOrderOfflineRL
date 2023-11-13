@@ -1,0 +1,6 @@
+Traceback (most recent call last):
+  File "/home/zhx/word/DriverOrderOfflineRL/CQL-SAC/train.py", line 72, in train
+    collect_random(env=env, dataset=buffer, num_samples=100000)
+  File "/home/zhx/word/DriverOrderOfflineRL/CQL-SAC/utils.py", line 17, in collect_random
+    state = env.reset()
+ValueError: too many values to unpack (expected 2)

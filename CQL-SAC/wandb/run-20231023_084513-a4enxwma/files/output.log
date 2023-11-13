@@ -1,0 +1,8 @@
+/tmp-data/conda/anaconda3/envs/CQL/lib/python3.9/site-packages/gym/utils/passive_env_checker.py:233: DeprecationWarning: `np.bool8` is a deprecated alias for `np.bool_`.  (Deprecated NumPy 1.24)
+  if not isinstance(terminated, (bool, np.bool8)):
+Traceback (most recent call last):
+  File "/tmp-data/zhx/DriverOrderOfflineRL/CQL-SAC/train.py", line 70, in train
+    collect_random(env=env, dataset=buffer, num_samples=10000)
+  File "/tmp-data/zhx/DriverOrderOfflineRL/CQL-SAC/utils.py", line 20, in collect_random
+    next_state, reward, done, _ = env.step(action)
+ValueError: too many values to unpack (expected 4)

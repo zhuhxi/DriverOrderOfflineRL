@@ -17,7 +17,7 @@ def collect_random(env, dataset, num_samples=200):
     state = env.reset()
     for _ in range(num_samples):
         action = env.action_space.sample()
-        next_state, reward, done, _ = env.step(action)
+        next_state, reward, done,  _ = env.step(action)
         dataset.add(state, action, reward, next_state, done)
         state = next_state
         if done:
@@ -32,7 +32,7 @@ def evaluate(env, policy, eval_runs=5):
         state = env.reset()
 
         rewards = 0
-        while True:
+        for eval_step in range(200):
             action = policy.get_action(state, eval=True)
 
             state, reward, done, _ = env.step(action)

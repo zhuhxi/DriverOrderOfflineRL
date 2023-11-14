@@ -5,3 +5,5 @@ mud_new
 order_new
 scripts/buffer.csv
 CQL-DQN/wandb/*
+/scripts/wandb/*
+/scripts/log/*

@@ -7,3 +7,7 @@ scripts/buffer.csv
 CQL-DQN/wandb/*
 /scripts/wandb/*
 /scripts/log/*
+alg_platform/
+feature_data
+mud_data
+order_data

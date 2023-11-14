@@ -1,10 +1,7 @@
 
 
 import gym
-<<<<<<< HEAD
-=======
 # import pybullet_envs
->>>>>>> 5408a1b3f1783ed64c90a910b3c82403790e6608
 import numpy as np
 from collections import deque
 import torch
@@ -47,10 +44,7 @@ def train(config):
     
     # env.seed(config.seed)
     # eval_env.seed(config.seed + 123)
-<<<<<<< HEAD
-=======
     env.action_space.seed(config.seed)
->>>>>>> 5408a1b3f1783ed64c90a910b3c82403790e6608
 
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     

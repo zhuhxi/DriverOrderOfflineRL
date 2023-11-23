@@ -1,2 +1,5 @@
 /scripts/wandb/*
 /scripts/log/*
+/scripts/feature11_ddqn.pkl
+/scripts/support_feature_ddqn.pkl
+/scripts/trained_models/*

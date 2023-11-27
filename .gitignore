@@ -11,3 +11,7 @@ alg_platform/
 feature_data
 mud_data
 order_data
+/scripts/feature11_ddqn.pkl
+/scripts/support_feature_ddqn.pkl
+/scripts/trained_models/*
+wandb/*

@@ -16,5 +16,5 @@ from rlexplore.revd import REVD
 from rlexplore.ngu import NGU
 from rlexplore.rnd import RND
 from rlexplore.icm import ICM
-from rlexplore.girm import GIRM
+# from rlexplore.girm import GIRM
 from rlexplore.utils import create_env, cleanup_log_dir

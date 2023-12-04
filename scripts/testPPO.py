@@ -4,314 +4,309 @@ sys.path.append('/home/zhx/word/DriverOrderOfflineRL/tianshou')
 sys.path.append('/home/zhx/word/DriverOrderOfflineRL/tianshou/examples/atari')
 sys.path.append('/home/zhx/word/DriverOrderOfflineRL/gym')
 sys.path.append('/home/zhx/word/DriverOrderOfflineRL')
+import torch.nn.functional as F
+import torch.nn as nn
+import torch
 
-import argparse
-import datetime
-import os
-import pprint
-import gym
+class Actor(nn.Module):
+    def __init__(self, state_dim, action_dim, net_width):
+        super(Actor, self).__init__()
 
+        self.l1 = nn.Linear(state_dim, net_width)
+        self.l2 = nn.Linear(net_width, net_width)
+        self.l3 = nn.Linear(net_width, action_dim)
+
+    def forward(self, state):
+        n = torch.tanh(self.l1(state))
+        n = torch.tanh(self.l2(n))
+        return n
+
+    def pi(self, state, softmax_dim = 0):
+        n = self.forward(state)
+        prob = F.softmax(self.l3(n), dim=softmax_dim)
+        return prob
+
+class Critic(nn.Module):
+    def __init__(self, state_dim,net_width):
+        super(Critic, self).__init__()
+
+        self.C1 = nn.Linear(state_dim, net_width)
+        self.C2 = nn.Linear(net_width, net_width)
+        self.C3 = nn.Linear(net_width, 1)
+
+    def forward(self, state):
+        v = torch.relu(self.C1(state))
+        v = torch.relu(self.C2(v))
+        v = self.C3(v)
+        return v
+
+def evaluate_policy(env, agent, turns = 3):
+    total_scores = 0
+    for j in range(turns):
+        s, info = env.reset()
+        done = False
+        while not done:
+            # Take deterministic actions at test time
+            a, logprob_a = agent.select_action(s, deterministic=True)
+            s_next, r, dw, tr, info = env.step(a)
+            done = (dw or tr)
+
+            total_scores += r
+            s = s_next
+    return int(total_scores/turns)
+
+
+#You can just ignore this funciton. Is not related to the RL.
+def str2bool(v):
+    '''transfer str to bool for argparse'''
+    if isinstance(v, bool):
+        return v
+    if v.lower() in ('yes', 'True','true','TRUE', 't', 'y', '1'):
+        return True
+    elif v.lower() in ('no', 'False','false','FALSE', 'f', 'n', '0'):
+        return False
+    else:
+        print('Wrong Input.')
+        raise
+from datetime import datetime
+from torch.distributions import Categorical
 import numpy as np
 import torch
-from torch.utils.tensorboard import SummaryWriter
-from torch.optim.lr_scheduler import LambdaLR
-from torch import nn
-
-from tianshou.data import Collector, VectorReplayBuffer
-from tianshou.policy import PPOPolicy
-from tianshou.policy.modelbased.icm import ICMPolicy
-from tianshou.trainer import onpolicy_trainer
-from tianshou.utils import TensorboardLogger, WandbLogger
-from tianshou.utils.net.discrete import IntrinsicCuriosityModule
-from tianshou.env import SubprocVectorEnv, DummyVectorEnv
-from tianshou.utils.net.common import ActorCritic
-from tianshou.utils.net.discrete import Actor, Critic, IntrinsicCuriosityModule
-
-from typing import Any, Dict, Optional, Sequence, Tuple, Union
-
-def get_args():
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--task", type=str, default="atari.benchmark")
-    parser.add_argument("--seed", type=int, default=0)
-    parser.add_argument("--scale-obs", type=int, default=0)
-    parser.add_argument("--eps-test", type=float, default=0.05)
-    parser.add_argument("--eps-train", type=float, default=1.)
-    parser.add_argument("--eps-train-final", type=float, default=0.05)
-    parser.add_argument("--buffer-size", type=int, default=50000)
-    parser.add_argument("--lr", type=float, default=0.0001)
-    parser.add_argument("--gamma", type=float, default=0.99)
-    parser.add_argument("--n-step", type=int, default=1)
-    parser.add_argument("--target-update-freq", type=int, default=1000)
-    parser.add_argument("--epoch", type=int, default=20000)
-    parser.add_argument("--step-per-epoch", type=int, default=100)
-    parser.add_argument("--step-per-collect", type=int, default=500)
-    parser.add_argument("--repeat-per-collect", type=int, default=4)
-    parser.add_argument("--update-per-step", type=float, default=1)
-    parser.add_argument("--batch-size", type=int, default=32)
-    parser.add_argument("--rew-norm", type=int, default=False)
-    parser.add_argument("--hidden-size", type=int, default=512)
-    parser.add_argument("--vf-coef", type=float, default=0.5)
-    parser.add_argument("--ent-coef", type=float, default=0.01)
-    parser.add_argument("--gae-lambda", type=float, default=0.95)
-    parser.add_argument("--lr-decay", type=int, default=True)
-    parser.add_argument("--training-num", type=int, default=10)
-    parser.add_argument("--test-num", type=int, default=10)
-    parser.add_argument("--max-grad-norm", type=float, default=0.5)
-    parser.add_argument("--eps-clip", type=float, default=0.2)
-    parser.add_argument("--dual-clip", type=float, default=None)
-    parser.add_argument("--value-clip", type=int, default=0)
-    parser.add_argument("--norm-adv", type=int, default=1)
-    parser.add_argument("--recompute-adv", type=int, default=0)
-    parser.add_argument("--logdir", type=str, default="log")
-    parser.add_argument("--render", type=float, default=0.)
-    parser.add_argument(
-        "--device", type=str, default="cuda" if torch.cuda.is_available() else "cpu"
-    )
-    parser.add_argument("--frames-stack", type=int, default=1)
-    parser.add_argument("--resume-path", type=str, default=None)
-    parser.add_argument("--resume-id", type=str, default=None)
-    parser.add_argument(
-        "--logger",
-        type=str,
-        default="wandb",
-        choices=["tensorboard", "wandb"],
-    )
-    parser.add_argument("--wandb-project", type=str, default="cyborg.ppo")
-    parser.add_argument(
-        "--watch",
-        default=False,
-        action="store_true",
-        help="watch the play of pre-trained policy only"
-    )
-    parser.add_argument("--save-buffer-name", type=str, default=None)
-    parser.add_argument(
-        "--icm-lr-scale",
-        type=float,
-        default=0.,
-        help="use intrinsic curiosity module with this lr scale"
-    )
-    parser.add_argument(
-        "--icm-reward-scale",
-        type=float,
-        default=0.01,
-        help="scaling factor for intrinsic curiosity reward"
-    )
-    parser.add_argument(
-        "--icm-forward-loss-weight",
-        type=float,
-        default=0.2,
-        help="weight for the forward model loss in ICM"
-    )
-    return parser.parse_args(args=[])
-
-args = get_args()
-
-import inspect
-from pprint import pprint
-from CybORG import CybORG
-from CybORG.Shared.Actions import *
-from CybORG.Agents import RedMeanderAgent, B_lineAgent
-from CybORG.Agents.Wrappers import *
-
-path = str(inspect.getfile(CybORG))
-path = path[:-10] + '/Shared/Scenarios/Scenario1b.yaml'
-
-# seed
-np.random.seed(args.seed)
-torch.manual_seed(args.seed)
-
-# env
-# CYBORG = CybORG(path,'sim', agents={'Red': RedMeanderAgent})
-# env = ChallengeWrapper(env=CYBORG, agent_name="Blue", max_steps=100)
-# train_envs = SubprocVectorEnv([lambda: ChallengeWrapper(env=CybORG(path,'sim', agents={'Red': RedMeanderAgent}), agent_name="Blue", max_steps=100) for _ in range(args.training_num)])
-# test_envs = SubprocVectorEnv([lambda: ChallengeWrapper(env=CybORG(path,'sim', agents={'Red': RedMeanderAgent}), agent_name="Blue", max_steps=100) for _ in range(args.test_num)])
-
-env = gym.make('CartPole-v1')
-train_envs = SubprocVectorEnv([lambda: gym.make('CartPole-v1') for _ in range(args.training_num)])
-test_envs = SubprocVectorEnv([lambda: gym.make('CartPole-v1') for _ in range(args.test_num)])
+import copy
+import math
 
 
-args.state_shape = env.observation_space.shape or env.observation_space.n
-args.action_shape = env.action_space.shape or env.action_space.n
-print("Observations shape:", args.state_shape)
-print("Actions shape:", args.action_shape)
+class PPO_discrete():
+    def __init__(self, **kwargs):
+        # Init hyperparameters for PPO agent, just like "self.gamma = opt.gamma, self.lambd = opt.lambd, ..."
+        self.__dict__.update(kwargs)
 
-class DQN(nn.Module):
-    """Reference: Human-level control through deep reinforcement learning.
+        '''Build Actor and Critic'''
+        self.actor = Actor(self.state_dim, self.action_dim, self.net_width).to(self.dvc)
+        self.actor_optimizer = torch.optim.Adam(self.actor.parameters(), lr=self.lr)
+        self.critic = Critic(self.state_dim, self.net_width).to(self.dvc)
+        self.critic_optimizer = torch.optim.Adam(self.critic.parameters(), lr=self.lr)
 
-    For advanced usage (how to customize the network), please refer to
-    :ref:`build_the_network`.
-    """
+        '''Build Trajectory holder'''
+        self.s_hoder = np.zeros((self.T_horizon, self.state_dim), dtype=np.float32)
+        self.a_hoder = np.zeros((self.T_horizon, 1), dtype=np.int64)
+        self.r_hoder = np.zeros((self.T_horizon, 1), dtype=np.float32)
+        self.s_next_hoder = np.zeros((self.T_horizon, self.state_dim), dtype=np.float32)
+        self.logprob_a_hoder = np.zeros((self.T_horizon, 1), dtype=np.float32)
+        self.done_hoder = np.zeros((self.T_horizon, 1), dtype=np.bool_)
+        self.dw_hoder = np.zeros((self.T_horizon, 1), dtype=np.bool_)
 
-    def __init__(
-        self,
-        state_shape: Sequence[int],
-        action_shape: Sequence[int],
-        device: Union[str, int, torch.device] = "cpu",
-        features_only: bool = False,
-        output_dim: Optional[int] = None,
-    ) -> None:
-        super().__init__()
-        self.device = device
-        self.output_dim = 512
-        self.net = nn.Sequential(
-            nn.Linear(state_shape, 512), nn.ReLU(inplace=True),
-            nn.Linear(512, 512), nn.ReLU(inplace=True),
-        )
+    def select_action(self, s, deterministic):
+        s = torch.from_numpy(s).float().to(self.dvc)
+        with torch.no_grad():
+            pi = self.actor.pi(s, softmax_dim=0)
+            if deterministic:
+                a = torch.argmax(pi).item()
+                return a, None
+            else:
+                m = Categorical(pi)
+                a = m.sample().item()
+                pi_a = pi[a].item()
+                return a, pi_a
 
-    def forward(
-        self,
-        obs: Union[np.ndarray, torch.Tensor],
-        state: Optional[Any] = None,
-        info: Dict[str, Any] = {},
-    ) -> Tuple[torch.Tensor, Any]:
-        r"""Mapping: s -> Q(s, \*)."""
-        obs = torch.as_tensor(obs, device=self.device, dtype=torch.float32)
-        return self.net(obs), state
-    
-# define model
-net = DQN(args.state_shape[0], args.action_shape, args.device).to(args.device)
-actor = Actor(net, args.action_shape, softmax_output=False, device=args.device)
-critic = Critic(net, device=args.device)
-optim = torch.optim.Adam(ActorCritic(actor, critic).parameters(), lr=args.lr)
+    def train(self):
+        self.entropy_coef *= self.entropy_coef_decay #exploring decay
+        '''Prepare PyTorch data from Numpy data'''
+        s = torch.from_numpy(self.s_hoder).to(self.dvc)
+        a = torch.from_numpy(self.a_hoder).to(self.dvc)
+        r = torch.from_numpy(self.r_hoder).to(self.dvc)
+        s_next = torch.from_numpy(self.s_next_hoder).to(self.dvc)
+        old_prob_a = torch.from_numpy(self.logprob_a_hoder).to(self.dvc)
+        done = torch.from_numpy(self.done_hoder).to(self.dvc)
+        dw = torch.from_numpy(self.dw_hoder).to(self.dvc)
 
-lr_scheduler = None
-# if args.lr_decay:
-#     # decay learning rate to 0 linearly
-#     max_update_num = args.epoch
+        ''' Use TD+GAE+LongTrajectory to compute Advantage and TD target'''
+        with torch.no_grad():
+            vs = self.critic(s)
+            vs_ = self.critic(s_next)
 
-#     lr_scheduler = LambdaLR(
-#         optim, lr_lambda=lambda epoch: args.lr
-#     )
-    
-# define policy
-def dist(p):
-    return torch.distributions.Categorical(logits=p)
+            '''dw(dead and win) for TD_target and Adv'''
+            deltas = r + self.gamma * vs_ * (~dw) - vs
+            deltas = deltas.cpu().flatten().numpy()
+            adv = [0]
 
-policy = PPOPolicy(
-    actor,
-    critic,
-    optim,
-    dist,
-    discount_factor=args.gamma,
-    gae_lambda=args.gae_lambda,
-    max_grad_norm=args.max_grad_norm,
-    vf_coef=args.vf_coef,
-    ent_coef=args.ent_coef,
-    reward_normalization=args.rew_norm,
-    action_scaling=False,
-    lr_scheduler=lr_scheduler,
-    action_space=env.action_space,
-    eps_clip=args.eps_clip,
-    value_clip=args.value_clip,
-    dual_clip=args.dual_clip,
-    advantage_normalization=args.norm_adv,
-    recompute_advantage=args.recompute_adv,
-).to(args.device)
+            '''done for GAE'''
+            for dlt, done in zip(deltas[::-1], done.cpu().flatten().numpy()[::-1]):
+                advantage = dlt + self.gamma * self.lambd * adv[-1] * (~done)
+                adv.append(advantage)
+            adv.reverse()
+            adv = copy.deepcopy(adv[0:-1])
+            adv = torch.tensor(adv).unsqueeze(1).float().to(self.dvc)
+            td_target = adv + vs
+            if self.adv_normalization:
+                adv = (adv - adv.mean()) / ((adv.std() + 1e-4))  #sometimes helps
 
-if args.resume_path:
-    policy.load_state_dict(torch.load(args.resume_path, map_location=args.device))
-    print("Loaded agent from: ", args.resume_path)
-# replay buffer: `save_last_obs` and `stack_num` can be removed together
-# when you have enough RAM
-buffer = VectorReplayBuffer(
-    args.buffer_size,
-    buffer_num=len(train_envs),
-    ignore_obs_next=True,
-    save_only_last_obs=False,
-    stack_num=args.frames_stack
-)
-# collector
-train_collector = Collector(policy, train_envs, buffer, exploration_noise=True)
-test_collector = Collector(policy, test_envs, exploration_noise=True)
+        """PPO update"""
+        #Slice long trajectopy into short trajectory and perform mini-batch PPO update
+        optim_iter_num = int(math.ceil(s.shape[0] / self.batch_size))
 
-# log
-now = datetime.datetime.now().strftime("%y%m%d-%H%M%S")
-args.algo_name = "ppo_icm" if args.icm_lr_scale > 0 else "ppo"
-log_name = os.path.join(args.task, args.algo_name, str(args.seed), now)
-log_path = os.path.join(args.logdir, log_name)
+        for _ in range(self.K_epochs):
+            #Shuffle the trajectory, Good for training
+            perm = np.arange(s.shape[0])
+            np.random.shuffle(perm)
+            perm = torch.LongTensor(perm).to(self.dvc)
+            s, a, td_target, adv, old_prob_a = \
+                s[perm].clone(), a[perm].clone(), td_target[perm].clone(), adv[perm].clone(), old_prob_a[perm].clone()
 
-# logger
-if args.logger == "wandb":
-    logger = WandbLogger(
-        save_interval=1,
-        name=log_name.replace(os.path.sep, "__"),
-        run_id=args.resume_id,
-        config=args,
-        project=args.wandb_project,
-    )
-writer = SummaryWriter(log_path)
-writer.add_text("args", str(args))
-if args.logger == "tensorboard":
-    logger = TensorboardLogger(writer)
-else:  # wandb
-    logger.load(writer)
+            '''mini-batch PPO update'''
+            for i in range(optim_iter_num):
+                index = slice(i * self.batch_size, min((i + 1) * self.batch_size, s.shape[0]))
 
-def save_best_fn(policy):
-    torch.save(policy.state_dict(), os.path.join(log_path, "policy.pth"))
+                '''actor update'''
+                prob = self.actor.pi(s[index], softmax_dim=1)
+                entropy = Categorical(prob).entropy().sum(0, keepdim=True)
+                prob_a = prob.gather(1, a[index])
+                ratio = torch.exp(torch.log(prob_a) - torch.log(old_prob_a[index]))  # a/b == exp(log(a)-log(b))
 
-def stop_fn(mean_rewards):
-    return mean_rewards >= 0
+                surr1 = ratio * adv[index]
+                surr2 = torch.clamp(ratio, 1 - self.clip_rate, 1 + self.clip_rate) * adv[index]
+                a_loss = -torch.min(surr1, surr2) - self.entropy_coef * entropy
 
-def save_checkpoint_fn(epoch, env_step, gradient_step):
-    # see also: https://pytorch.org/tutorials/beginner/saving_loading_models.html
-    ckpt_path = os.path.join(log_path, "checkpoint.pth")
-    torch.save({"model": policy.state_dict()}, ckpt_path)
-    return ckpt_path
+                self.actor_optimizer.zero_grad()
+                a_loss.mean().backward()
+                torch.nn.utils.clip_grad_norm_(self.actor.parameters(), 40)
+                self.actor_optimizer.step()
 
-# watch agent's performance
-def watch():
-    print("Setup test envs ...")
-    policy.eval()
-    test_envs.seed(args.seed)
-    if args.save_buffer_name:
-        print(f"Generate buffer with size {args.buffer_size}")
-        buffer = VectorReplayBuffer(
-            args.buffer_size,
-            buffer_num=len(test_envs),
-            ignore_obs_next=True,
-            save_only_last_obs=True,
-            stack_num=args.frames_stack,
-        )
-        collector = Collector(policy, test_envs, buffer, exploration_noise=True)
-        result = collector.collect(n_step=args.buffer_size)
-        print(f"Save buffer into {args.save_buffer_name}")
-        # Unfortunately, pickle will cause oom with 1M buffer size
-        buffer.save_hdf5(args.save_buffer_name)
-    else:
-        print("Testing agent ...")
-        test_collector.reset()
-        result = test_collector.collect(
-            n_episode=args.test_num, render=args.render
-        )
-    rew = result["rews"].mean()
-    print(f"Mean reward (over {result['n/ep']} episodes): {rew}")
+                '''critic update'''
+                c_loss = (self.critic(s[index]) - td_target[index]).pow(2).mean()
+                for name, param in self.critic.named_parameters():
+                    if 'weight' in name:
+                        c_loss += param.pow(2).sum() * self.l2_reg
 
-if args.watch:
-    watch()
-    exit(0)
+                self.critic_optimizer.zero_grad()
+                c_loss.backward()
+                self.critic_optimizer.step()
 
-# test train_collector and start filling replay buffer
-train_collector.collect(n_step=args.batch_size * args.training_num)
-# trainer
-result = onpolicy_trainer(
-    policy,
-    train_collector,
-    test_collector,
-    args.epoch,
-    args.step_per_epoch,
-    args.repeat_per_collect,
-    args.test_num,
-    args.batch_size,
-    step_per_collect=args.step_per_collect,
-    stop_fn=stop_fn,
-    save_best_fn=save_best_fn,
-    logger=logger,
-    test_in_train=False,
-    resume_from_log=args.resume_id is not None,
-    save_checkpoint_fn=save_checkpoint_fn,
-)
+    def put_data(self, s, a, r, s_next, logprob_a, done, dw, idx):
+        self.s_hoder[idx] = s
+        self.a_hoder[idx] = a
+        self.r_hoder[idx] = r
+        self.s_next_hoder[idx] = s_next
+        self.logprob_a_hoder[idx] = logprob_a
+        self.done_hoder[idx] = done
+        self.dw_hoder[idx] = dw
 
-pprint.pprint(result)
-watch()
+    def save(self, episode):
+        torch.save(self.critic.state_dict(), "./model/ppo_critic{}.pth".format(episode))
+        torch.save(self.actor.state_dict(), "./model/ppo_actor{}.pth".format(episode))
 
+    def load(self, episode):
+        self.critic.load_state_dict(torch.load("./model/ppo_critic{}.pth".format(episode)))
+        self.actor.load_state_dict(torch.load("./model/ppo_actor{}.pth".format(episode)))
+
+import gym
+import os, shutil
+import argparse
+import torch
+
+'''Hyperparameter Setting'''
+parser = argparse.ArgumentParser()
+parser.add_argument('--dvc', type=str, default='cuda', help='running device: cuda or cpu')
+parser.add_argument('--EnvIdex', type=int, default=0, help='CP-v1, LLd-v2')
+parser.add_argument('--write', type=str2bool, default=False, help='Use SummaryWriter to record the training')
+parser.add_argument('--render', type=str2bool, default=False, help='Render or Not')
+parser.add_argument('--Loadmodel', type=str2bool, default=False, help='Load pretrained model or Not')
+parser.add_argument('--ModelIdex', type=int, default=300000, help='which model to load')
+
+parser.add_argument('--seed', type=int, default=209, help='random seed')
+parser.add_argument('--T_horizon', type=int, default=2048, help='lenth of long trajectory')
+parser.add_argument('--Max_train_steps', type=int, default=5e7, help='Max training steps')
+parser.add_argument('--save_interval', type=int, default=1e5, help='Model saving interval, in steps.')
+parser.add_argument('--eval_interval', type=int, default=5e3, help='Model evaluating interval, in steps.')
+
+parser.add_argument('--gamma', type=float, default=0.99, help='Discounted Factor')
+parser.add_argument('--lambd', type=float, default=0.95, help='GAE Factor')
+parser.add_argument('--clip_rate', type=float, default=0.2, help='PPO Clip rate')
+parser.add_argument('--K_epochs', type=int, default=10, help='PPO update times')
+parser.add_argument('--net_width', type=int, default=64, help='Hidden net width')
+parser.add_argument('--lr', type=float, default=1e-4, help='Learning rate')
+parser.add_argument('--l2_reg', type=float, default=0, help='L2 regulization coefficient for Critic')
+parser.add_argument('--batch_size', type=int, default=64, help='lenth of sliced trajectory')
+parser.add_argument('--entropy_coef', type=float, default=0, help='Entropy coefficient of Actor')
+parser.add_argument('--entropy_coef_decay', type=float, default=0.99, help='Decay rate of entropy_coef')
+parser.add_argument('--adv_normalization', type=str2bool, default=False, help='Advantage normalization')
+opt = parser.parse_args(args=[])
+opt.dvc = torch.device(opt.dvc) # from str to torch.device
+print(opt)
+
+# Build Training Env and Evaluation Env
+EnvName = ['CartPole-v1']
+BriefEnvName = ['CP-v1']
+env = gym.make(EnvName[opt.EnvIdex], render_mode = "human" if opt.render else None)
+eval_env = gym.make(EnvName[opt.EnvIdex])
+opt.state_dim = env.observation_space.shape[0]
+opt.action_dim = env.action_space.n
+opt.max_e_steps = env._max_episode_steps
+
+# Seed Everything
+env_seed = opt.seed
+torch.manual_seed(opt.seed)
+torch.cuda.manual_seed(opt.seed)
+torch.backends.cudnn.deterministic = True
+torch.backends.cudnn.benchmark = False
+print("Random Seed: {}".format(opt.seed))
+
+print('Env:',BriefEnvName[opt.EnvIdex],'  state_dim:',opt.state_dim,'  action_dim:',opt.action_dim,'   Random Seed:',opt.seed, '  max_e_steps:',opt.max_e_steps)
+print('\n')
+
+# Use tensorboard to record training curves
+if opt.write:
+    from torch.utils.tensorboard import SummaryWriter
+    timenow = str(datetime.now())[0:-10]
+    timenow = ' ' + timenow[0:13] + '_' + timenow[-2::]
+    writepath = 'runs/{}'.format(BriefEnvName[opt.EnvIdex]) + timenow
+    if os.path.exists(writepath): shutil.rmtree(writepath)
+    writer = SummaryWriter(log_dir=writepath)
+
+if not os.path.exists('model'): os.mkdir('model')
+agent = PPO_discrete(**vars(opt))
+if opt.Loadmodel: agent.load(opt.ModelIdex)
+
+if opt.render:
+    while True:
+        ep_r = evaluate_policy(env, agent, turns=1)
+        print(f'Env:{EnvName[opt.EnvIdex]}, Episode Reward:{ep_r}')
+else:
+    traj_lenth, total_steps = 0, 0
+    while total_steps < opt.Max_train_steps:
+        s, info = env.reset(seed=env_seed)  # Do not use opt.seed directly, or it can overfit to opt.seed
+        env_seed += 1
+        done = False
+
+        '''Interact & trian'''
+        while not done:
+            '''Interact with Env'''
+            a, logprob_a = agent.select_action(s, deterministic=False) # use stochastic when training
+            s_next, r, dw, tr, info = env.step(a) # dw: dead&win; tr: truncated
+            if r <=-100: r = -30  #good for LunarLander
+            done = (dw or tr)
+
+            '''Store the current transition'''
+            agent.put_data(s, a, r, s_next, logprob_a, done, dw, idx = traj_lenth)
+            s = s_next
+
+            traj_lenth += 1
+            total_steps += 1
+
+            '''Update if its time'''
+            if traj_lenth % opt.T_horizon == 0:
+                agent.train()
+                traj_lenth = 0
+
+            '''Record & log'''
+            if total_steps % opt.eval_interval == 0:
+                score = evaluate_policy(eval_env, agent, turns=3) # evaluate the policy for 3 times, and get averaged result
+                if opt.write: writer.add_scalar('ep_r', score, global_step=total_steps)
+                print('EnvName:',EnvName[opt.EnvIdex],'seed:',opt.seed,'steps: {}k'.format(int(total_steps/1000)),'score:', score)
+
+            '''Save model'''
+            if total_steps % opt.save_interval==0:
+                agent.save(total_steps)
+
+    env.close()
+    eval_env.close()

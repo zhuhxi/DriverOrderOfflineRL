@@ -15,3 +15,5 @@ order_data
 /scripts/support_feature_ddqn.pkl
 /scripts/trained_models/*
 wandb/*
+log/atari.benchmark/
+model/

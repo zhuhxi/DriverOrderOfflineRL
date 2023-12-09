@@ -16,6 +16,7 @@ import torch.nn.functional as F
 from torch.distributions import Categorical
 import gym
 import wandb
+import random
 
 class ActorPPO(nn.Module):
     def __init__(self, dims: [int], state_dim: int, action_dim: int):
@@ -77,6 +78,52 @@ from CybORG.Shared.Actions import *
 from CybORG.Agents import RedMeanderAgent, B_lineAgent
 from CybORG.Agents.Wrappers import *
 
+class HierEnv(gym.Env):
+    # Env parameters
+    max_steps = 100 # Careful! There are two other envs!
+    mem_len = 1
+
+    path = str(inspect.getfile(CybORG))
+    path = path[:-10] + '/Shared/Scenarios/Scenario1b.yaml'
+
+    """The CybORGAgent env"""
+
+    def __init__(self):
+        agents = {
+            'Red': RedMeanderAgent  # B_lineAgent , #RedMeanderAgent, 'Green': GreenAgent
+        }
+
+        self.cyborg = CybORG(self.path, 'sim', agents={'Red':RedMeanderAgent})
+        self.RMenv  = ChallengeWrapper(env=self.cyborg, agent_name='Blue', max_steps=HierEnv.max_steps)
+        self.cyborg = CybORG(self.path, 'sim', agents={'Red':B_lineAgent})
+        self.BLenv  = ChallengeWrapper(env=self.cyborg, agent_name='Blue', max_steps=HierEnv.max_steps)
+        #action space is 2 for each trained agent to select from
+        self.action_space = spaces.Discrete(2)
+
+        # observations for controller is a sliding window of 4 observations
+        self.observation_space = spaces.Box(-1.0,1.0,(self.mem_len,52), dtype=float)
+
+        self.action = None
+        self.env = self.BLenv
+
+    def reset(self):
+        self.steps = 0
+        #rest the environments of each attacker
+        self.BLenv.reset()
+        self.RMenv.reset()
+        if random.choice([0,1]) == 0:
+            self.env = self.BLenv
+        else:
+            self.env = self.RMenv
+        return self.env.reset()
+
+    def step(self, action=None):
+        obs, reward, done, info = self.env.step(action)
+        return obs, reward, done, info
+
+    def seed(self, seed=None):
+        random.seed(seed)
+
 path = str(inspect.getfile(CybORG))
 path = path[:-10] + '/Shared/Scenarios/Scenario1b.yaml'
 
@@ -108,7 +155,7 @@ class Config:  # for on-policy
         self.repeat_times = 8.0  # repeatedly update network using ReplayBuffer to keep critic's loss small
 
         '''Arguments for device'''
-        self.gpu_id = int(1)  # `int` means the ID of single GPU, -1 means CPU
+        self.gpu_id = int(3)  # `int` means the ID of single GPU, -1 means CPU
         self.thread_num = int(8)  # cpu_num for pytorch, `torch.set_num_threads(self.num_threads)`
         self.random_seed = int(0)  # initialize random seed in self.init_before_training()
 
@@ -173,7 +220,8 @@ def kwargs_filter(function, kwargs: dict) -> dict:
 
 
 def build_env(env_class=None, env_args=None):
-    return ChallengeWrapper(env=CybORG(path,'sim', agents={'Red': B_lineAgent}), agent_name="Blue", max_steps=100)
+    # return ChallengeWrapper(env=CybORG(path,'sim', agents={'Red': RedMeanderAgent}), agent_name="Blue", max_steps=100)
+    return HierEnv()
 
 class AgentBase:
     def __init__(self, net_dims: [int], state_dim: int, action_dim: int, gpu_id: int = 0, args: Config = Config()):
@@ -335,7 +383,8 @@ def train_agent(args: Config):
                           eval_per_step=args.eval_per_step,
                           eval_times=args.eval_times,
                           cwd=args.cwd)
-    with wandb.init(project="elegentrl.ppo.cyborg", name="11-29_elegentrl.ppo.cyborg.3layerMlp.B_lineAgent", dir="/home/zhx/word/DriverOrderOfflineRL/scripts/wandb"):
+    step = 0
+    with wandb.init(project="elegentrl.ppo.cyborg", name="12-8_elegentrl.ppo.cyborg.3layerMlp.HierEnv", dir="/home/zhx/word/DriverOrderOfflineRL/scripts/wandb", config=args):
         wandb.watch(agent.act, log="gradients", log_freq=10)
         wandb.watch(agent.cri, log="gradients", log_freq=10)
     # for i in range(100):
@@ -347,6 +396,10 @@ def train_agent(args: Config):
             # print(f"100 len return: {buffer_items[3].sum() / 20}")
 
             evaluator.evaluate_and_save(agent.act, args.horizon_len, logging_tuple)
+            step += 1
+            if (step % 10):
+                torch.save(agent.act.state_dict(), f"{wandb.run.dir}/{step}actor.pth")
+                torch.save(agent.cri.state_dict(), f"{wandb.run.dir}/{step}critic.pth")
             if (evaluator.total_step > args.break_step) or os.path.exists(f"{args.cwd}/stop"):
                 break  # stop training when reach `break_step` or `mkdir cwd/stop`
 
@@ -401,7 +454,6 @@ class Evaluator:
         used_time = time.time() - self.start_time
         self.recorder.append((self.total_step, used_time, avg_r))
 
-        print("test_result: ", avg_r)
         print(f"|step: {self.total_step:8.2e}  used_time:{used_time:8.0f}  "
               f"| avg_r:{avg_r:8.2f}  std_r:{std_r:6.2f}  avg_s:{avg_s:6.0f}  "
               f"| objC:{logging_tuple[0]:8.2f}  objA:{logging_tuple[1]:8.2f}")
@@ -437,7 +489,7 @@ def get_rewards_and_steps(env, actor, if_render: bool = False) -> (float, int): 
 def train_ppo():
     agent_class = AgentPPO  # DRL algorithm name
     # env = ChallengeWrapper(env=CybORG(path,'sim', agents={'Red': RedMeanderAgent}), agent_name="Blue", max_steps=100)
-    env = ChallengeWrapper(env=CybORG(path,'sim', agents={'Red': B_lineAgent}), agent_name="Blue", max_steps=100)
+    env = ChallengeWrapper(env=CybORG(path,'sim', agents={'Red': RedMeanderAgent}), agent_name="Blue", max_steps=100)
     env_class = None  # run a custom env: PendulumEnv, which based on OpenAI pendulum
     env_args = {
         'env_name': 'cyborg',  # Apply torque on the free end to swing a pendulum into an upright position

@@ -17,6 +17,7 @@ from torch.distributions import Categorical
 import gym
 import wandb
 from copy import deepcopy
+from typing import Sequence
 
 class QNet(nn.Module):  # `nn.Module` is a PyTorch module for neural network
     def __init__(self, dims: [int], state_dim: int, action_dim: int):
@@ -34,6 +35,43 @@ class QNet(nn.Module):  # `nn.Module` is a PyTorch module for neural network
         else:
             action = torch.randint(self.action_dim, size=(state.shape[0], 1))
         return action
+
+class IntrinsicCuriosityModule(nn.Module):
+    """Implementation of Intrinsic Curiosity Module. arXiv:1705.05363.
+
+    :param feature_net: a self-defined feature_net which output a
+        flattened hidden state.
+    :param feature_dim: input dimension of the feature net.
+    :param action_dim: dimension of the action space.
+    :param hidden_sizes: hidden layer sizes for forward and inverse models.
+    :param device: device for the module.
+    """
+
+    def __init__(
+        self,
+        feature_dim: int,
+        action_dim: int,
+        args,
+        hidden_sizes: Sequence[int] = (),
+    ) -> None:
+        super().__init__()
+        self.device = torch.device(f"cuda:{args.gpu_id}" if (torch.cuda.is_available() and (args.gpu_id >= 0)) else "cpu")
+        self.feature_net = build_mlp(dims=[4, 256, feature_dim]).to(self.device)
+        self.forward_model = build_mlp(dims=[feature_dim + 1, *hidden_sizes, feature_dim]).to(self.device)
+        self.inverse_model = build_mlp(dims=[feature_dim * 2, *hidden_sizes, 2]).to(self.device)
+        self.feature_dim = feature_dim
+        self.action_dim = action_dim
+    def forward(
+        self, state, action, next_state
+    ) -> tuple[torch.Tensor, torch.Tensor]:
+        phi1, phi2 = self.feature_net(state), self.feature_net(next_state)
+        phi2_hat = self.forward_model(
+            torch.cat([phi1, action], dim=1),
+        )
+        mse_loss = 0.5 * F.mse_loss(phi2_hat, phi2, reduction="none").sum(1)
+        act_hat = self.inverse_model(torch.cat([phi1, phi2], dim=1))
+        return mse_loss, act_hat
+
 
 def build_mlp(dims: [int]) -> nn.Sequential:  # MLP (MultiLayer Perceptron)
     net_list = []
@@ -130,7 +168,7 @@ class Config:  # for on-policy
         self.repeat_times = 1.0  # repeatedly update network using ReplayBuffer to keep critic's loss small
 
         '''Arguments for device'''
-        self.gpu_id = int(3)  # `int` means the ID of single GPU, -1 means CPU
+        self.gpu_id = int(1)  # `int` means the ID of single GPU, -1 means CPU
         self.thread_num = int(8)  # cpu_num for pytorch, `torch.set_num_threads(self.num_threads)`
         self.random_seed = int(0)  # initialize random seed in self.init_before_training()
 
@@ -145,7 +183,7 @@ class Config:  # for on-policy
         self.epsilon_decay_rate = 0.995
         self.attacker = RedMeanderAgent
         
-        self.eval_env = HierEnv
+        self.eval_env = build_env()
 
     def init_before_training(self):
         if self.cwd is None:  # set cwd (current working directory) for saving model
@@ -173,9 +211,9 @@ def get_gym_env_args(env, if_print: bool) -> dict:
     if if_discrete:  # make sure it is discrete action space
         action_dim = env.action_space.n
 
-    env_name = 'cyborg.discrete.ppo'
-    state_dim = 52  # sometimes state_dim is a list
-    action_dim = 54
+    env_name = 'cyborg.discrete.dqn'
+    state_dim = 4  # sometimes state_dim is a list
+    action_dim = 2
     if_discrete = True
 
     env_args = {'env_name': env_name,
@@ -196,9 +234,26 @@ def kwargs_filter(function, kwargs: dict) -> dict:
     return {key: kwargs[key] for key in common_args}  # filtered kwargs
 
 
+class preprocessing(object):
+    def __init__(self, env):
+        self.env = env
+        self.action_space = self.env.action_space
+        self.observation_space = self.env.observation_space
+
+    def reset(self):
+        obs, info = self.env.reset()
+        return obs
+
+    def step(self, action):
+        obs, reward, done, _, info = self.env.step(action)
+        return obs, reward, done, info
+    
 def build_env(env_class=None, env_args=None):
-    # return ChallengeWrapper(env=CybORG(path,'sim', agents={'Red': RedMeanderAgent}), agent_name="Blue", max_steps=100)
-    return HierEnv()
+    # return ChallengeWrapper(env=CybORG(path,'sim', agents={'Red': B_lineAgent}), agent_name="Blue", max_steps=100)
+    # return HierEnv()
+    env = gym.make('CartPole-v1')
+    
+    return preprocessing(env)
 
 class AgentBase:
     def __init__(self, net_dims: [int], state_dim: int, action_dim: int, gpu_id: int = 0, args: Config = Config()):
@@ -249,6 +304,9 @@ class AgentDQN(AgentBase):
         self.act_target = self.cri_target = deepcopy(self.act)
 
         self.act.explore_rate = getattr(args, "explore_rate", 1)  # set for `self.act.get_action()`
+        self.icm = IntrinsicCuriosityModule(feature_dim=256, action_dim=2, args=args, hidden_sizes=[256])
+        self.icm_optimizer = torch.optim.Adam(self.icm.parameters(), self.learning_rate)
+        
         # the probability of choosing action randomly in epsilon-greedy
         
     def explore_env(self, env, horizon_len: int, if_random: bool = False) -> [Tensor]:
@@ -289,23 +347,16 @@ class AgentDQN(AgentBase):
         update_times = int(buffer.cur_size * self.repeat_times / self.batch_size)
         assert update_times >= 1
         for i in range(update_times):
-            obj_critic, q_value = self.get_obj_critic(buffer, self.batch_size)
-            self.optimizer_update(self.cri_optimizer, obj_critic)
-            self.soft_update(self.cri_target, self.cri, self.soft_update_tau)
+            obj_critic, forward_loss, inverser_loss, q_value = self.get_obj_critic(buffer, self.batch_size)
+            icm_loss = forward_loss * 0.2 + inverser_loss * 0.8
+            
+            self.cri_optimizer.zero_grad()
+            self.icm_optimizer.zero_grad()
+            obj_critic.backward()
+            icm_loss.backward()
+            self.cri_optimizer.step()
+            self.icm_optimizer.step()
 
-            obj_critics += obj_critic.item()
-            q_values += q_value.item()
-        return obj_critics / update_times, q_values / update_times
-
-    def update_net(self, buffer) -> [float]:
-        obj_critics = 0.0
-        q_values = 0.0
-
-        update_times = int(buffer.cur_size * self.repeat_times / self.batch_size)
-        assert update_times >= 1
-        for i in range(update_times):
-            obj_critic, q_value = self.get_obj_critic(buffer, self.batch_size)
-            self.optimizer_update(self.cri_optimizer, obj_critic)
             self.soft_update(self.cri_target, self.cri, self.soft_update_tau)
 
             obj_critics += obj_critic.item()
@@ -315,11 +366,22 @@ class AgentDQN(AgentBase):
     def get_obj_critic(self, buffer, batch_size: int) -> (Tensor, Tensor):
         with torch.no_grad():
             state, action, reward, undone, next_state = buffer.sample(batch_size)
+            ## reward with curiosity
+            curiosity_reward, _ = self.icm(state, action, next_state) 
+            reward = reward + 0.01 * curiosity_reward.view(-1, 1)
+            ## reward with curiosity
             next_q = self.cri_target(next_state).max(dim=1, keepdim=True)[0]
             q_label = reward + undone * self.gamma * next_q
+        
+        # policy loss
         q_value = self.cri(state).gather(1, action.long())
         obj_critic = self.criterion(q_value, q_label)
-        return obj_critic, q_value.mean()
+        
+        # ICM Loss
+        forward_loss, act_hat = self.icm(state, action, next_state) 
+        inverse_loss = F.cross_entropy(input=act_hat, target=action.detach().type(torch.long).view(-1))
+        
+        return obj_critic, forward_loss.mean(), inverse_loss, q_value.mean()
 
 class ReplayBuffer:  # for off-policy
     def __init__(self, max_size: int, state_dim: int, action_dim: int, gpu_id: int = 0):
@@ -330,9 +392,9 @@ class ReplayBuffer:  # for off-policy
         self.device = torch.device(f"cuda:{gpu_id}" if (torch.cuda.is_available() and (gpu_id >= 0)) else "cpu")
 
         self.states = torch.empty((max_size, state_dim), dtype=torch.float32, device=self.device)
-        self.actions = torch.empty((max_size, action_dim), dtype=torch.float32, device=self.device)
+        self.actions = torch.empty((max_size, action_dim), dtype=torch.int32, device=self.device)
         self.rewards = torch.empty((max_size, 1), dtype=torch.float32, device=self.device)
-        self.undones = torch.empty((max_size, 1), dtype=torch.float32, device=self.device)
+        self.undones = torch.empty((max_size, 1), dtype=torch.int32, device=self.device)
 
     def update(self, items: [Tensor]):
         states, actions, rewards, undones = items
@@ -372,23 +434,27 @@ def train_agent(args: Config):
     buffer_items = agent.explore_env(env, args.horizon_len * args.eval_times, if_random=True)
     buffer.update(buffer_items)  # warm up for ReplayBuffer
 
-    evaluator = Evaluator(eval_env=HierEnv(),
+    evaluator = Evaluator(eval_env=build_env(),
                           eval_per_step=args.eval_per_step, eval_times=args.eval_times, cwd=args.cwd)
-    with wandb.init(project="elegentrl.dqn.cyborg", name=f"12-6_elegentrl.dqn.cyborg.HierEnv.epsilonDecay{args.epsilon_decay_rate}.evalEnv.{args.eval_env}", dir="/home/zhx/word/DriverOrderOfflineRL/scripts/wandb", config=args):
+    step = 0
+    with wandb.init(project="elegentrl.dqn.cyborg", name=f"12-8_elegentrl.dqn.cartpole.curiosity.dividedLoss", dir="/home/zhx/word/DriverOrderOfflineRL/scripts/wandb", config=args):
         wandb.watch(agent.act, log="gradients", log_freq=10)
         torch.set_grad_enabled(False)
         while True:  # start training
             buffer_items = agent.explore_env(env, args.horizon_len)
             buffer.update(buffer_items)
 
-            agent.act.explore_rate *= args.epsilon_decay_rate
+            # agent.act.explore_rate *= args.epsilon_decay_rate
+            agent.act.explore_rate = 0.2
             torch.set_grad_enabled(True)
             logging_tuple = agent.update_net(buffer)
             torch.set_grad_enabled(False)
 
             evaluator.evaluate_and_save(agent.act, args.horizon_len, logging_tuple)
-            if (evaluator.total_step % 10000):
-                torch.save(agent.act.state_dict(), f"{wandb.run.dir}/{int(evaluator.total_step / 2000)}actor.pth")
+            step += 1
+            # if (step % 10):
+            #     torch.save(agent.act.state_dict(), f"{wandb.run.dir}/{step}actor.pth")
+            #     torch.save(agent.icm.state_dict(), f"{wandb.run.dir}/{step}icm.pth")
             if (evaluator.total_step > args.break_step) or os.path.exists(f"{args.cwd}/stop"):
                 break  # stop training when reach `break_step` or `mkdir cwd/stop`
 
@@ -442,7 +508,6 @@ class Evaluator:
         used_time = time.time() - self.start_time
         self.recorder.append((self.total_step, used_time, avg_r))
 
-        print("test_result: ", avg_r)
         print(f"|step: {self.total_step:8.2e}  used_time:{used_time:8.0f}  "
               f"| avg_r:{avg_r:8.2f}  std_r:{std_r:6.2f}  avg_s:{avg_s:6.0f}  "
               f"| objC:{logging_tuple[0]:8.2f}  objA:{logging_tuple[1]:8.2f}"
@@ -467,7 +532,7 @@ def get_rewards_and_steps(env, actor, if_render: bool = False) -> (float, int): 
     for episode_steps in range(500):
         tensor_state = torch.as_tensor(state, dtype=torch.float32, device=device).unsqueeze(0)
         tensor_action = actor.get_action(tensor_state)
-        action = tensor_action  # not need detach(), because using torch.no_grad() outside
+        action = tensor_action.detach().cpu().numpy()[0][0]  # not need detach(), because using torch.no_grad() outside
         state, reward, done, info = env.step(action)
         cumulative_returns += reward
 
@@ -480,8 +545,8 @@ def get_rewards_and_steps(env, actor, if_render: bool = False) -> (float, int): 
 def train_dqn():
     env_args = {
         'env_name': 'cyborg',  # A pole is attached by an un-actuated joint to a cart.
-        'state_dim': 52,  # (CartPosition, CartVelocity, PoleAngle, PoleAngleVelocity)
-        'action_dim': 54,  # (Push cart to the left, Push cart to the right)
+        'state_dim': 4,  # (CartPosition, CartVelocity, PoleAngle, PoleAngleVelocity)
+        'action_dim': 2,  # (Push cart to the left, Push cart to the right)
         'if_discrete': True,  # discrete action space
     }  # env_args = get_gym_env_args(env=gym.make('CartPole-v0'), if_print=True)
 

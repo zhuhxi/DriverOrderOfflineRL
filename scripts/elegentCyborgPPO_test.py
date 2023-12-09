@@ -16,24 +16,53 @@ import torch.nn.functional as F
 from torch.distributions import Categorical
 import gym
 import wandb
-from copy import deepcopy
+import random
 
-class QNet(nn.Module):  # `nn.Module` is a PyTorch module for neural network
+class ActorPPO(nn.Module):
     def __init__(self, dims: [int], state_dim: int, action_dim: int):
         super().__init__()
-        self.net = build_mlp(dims=[state_dim, *dims, action_dim])
-        self.explore_rate = None
-        self.action_dim = action_dim
+        self.l1 = nn.Linear(state_dim, 256)
+        self.l2 = nn.Linear(256, 256)
+        self.l3 = nn.Linear(256, action_dim)
 
     def forward(self, state: Tensor) -> Tensor:
-        return self.net(state)  # Q values for multiple actions
+        n = torch.tanh(self.l1(state))
+        n = torch.tanh(self.l2(n))
+        return n
 
-    def get_action(self, state: Tensor) -> Tensor:  # return the index [int] of discrete action for exploration
-        if self.explore_rate < torch.rand(1):
-            action = self.net(state).argmax(dim=1, keepdim=True)
-        else:
-            action = torch.randint(self.action_dim, size=(state.shape[0], 1))
-        return action
+    def get_action(self, state: Tensor) -> (Tensor, Tensor):  # for exploration
+        with torch.no_grad():
+            pi = self.pi(state, softmax_dim=1)
+            m = Categorical(pi)
+            a = m.sample().item()
+            pi_a = torch.log(pi[0][a]).item()
+            return a, pi_a
+    
+    def pi(self, state, softmax_dim = 1):
+        n = self.forward(state)
+        prob = F.softmax(self.l3(n), dim=softmax_dim)
+        return prob
+
+    def get_logprob_entropy(self, state: Tensor, action: Tensor) -> (Tensor, Tensor):
+        prob = self.pi(state, softmax_dim=1)
+        entropy = Categorical(prob).entropy()
+        prob_action = prob.gather(1, action.view(-1, 1))
+        logprob = torch.log(prob_action)
+        return logprob.squeeze(1), entropy
+
+    @staticmethod
+    def convert_action_for_env(action: Tensor) -> Tensor:
+        return action.tanh()
+
+
+class CriticPPO(nn.Module):
+    def __init__(self, dims: [int], state_dim: int, _action_dim: int):
+        super().__init__()
+        self.net = build_mlp(dims=[state_dim, *dims, 1])
+
+    def forward(self, state: Tensor) -> Tensor:
+        return self.net(state)  # advantage value
+
 
 def build_mlp(dims: [int]) -> nn.Sequential:  # MLP (MultiLayer Perceptron)
     net_list = []
@@ -48,13 +77,6 @@ from CybORG import CybORG
 from CybORG.Shared.Actions import *
 from CybORG.Agents import RedMeanderAgent, B_lineAgent
 from CybORG.Agents.Wrappers import *
-
-path = str(inspect.getfile(CybORG))
-path = path[:-10] + '/Shared/Scenarios/Scenario1b.yaml'
-
-from gym import spaces
-import gym
-import random
 
 class HierEnv(gym.Env):
     # Env parameters
@@ -102,6 +124,9 @@ class HierEnv(gym.Env):
     def seed(self, seed=None):
         random.seed(seed)
 
+path = str(inspect.getfile(CybORG))
+path = path[:-10] + '/Shared/Scenarios/Scenario1b.yaml'
+
 class Config:  # for on-policy
     def __init__(self, agent_class=None, env_class=None, env_args=None):
         self.agent_class = agent_class  # agent = agent_class(...)
@@ -124,10 +149,10 @@ class Config:  # for on-policy
         self.net_dims = (256, 256)  # the middle layer dimension of MLP (MultiLayer Perceptron)
         self.learning_rate = 6e-5  # 2 ** -14 ~= 6e-5
         self.soft_update_tau = 5e-3  # 2 ** -8 ~= 5e-3
-        self.batch_size = int(64)  # num of transitions sampled from replay buffer.
-        self.horizon_len = int(512)  # collect horizon_len step while exploring, then update network
-        self.buffer_size = int(1e6)  # ReplayBuffer size. Empty the ReplayBuffer for on-policy.
-        self.repeat_times = 1.0  # repeatedly update network using ReplayBuffer to keep critic's loss small
+        self.batch_size = int(1024)  # num of transitions sampled from replay buffer.
+        self.horizon_len = int(2000)  # collect horizon_len step while exploring, then update network
+        self.buffer_size = None  # ReplayBuffer size. Empty the ReplayBuffer for on-policy.
+        self.repeat_times = 8.0  # repeatedly update network using ReplayBuffer to keep critic's loss small
 
         '''Arguments for device'''
         self.gpu_id = int(3)  # `int` means the ID of single GPU, -1 means CPU
@@ -142,16 +167,14 @@ class Config:  # for on-policy
         self.eval_times = int(32)  # number of times that get episodic cumulative return
         self.eval_per_step = int(2e4)  # evaluate the agent per training steps
 
-        self.epsilon_decay_rate = 0.995
-        self.attacker = RedMeanderAgent
-        
-        self.eval_env = HierEnv
-
     def init_before_training(self):
         if self.cwd is None:  # set cwd (current working directory) for saving model
             self.cwd = f'./{self.env_name}_{self.agent_class.__name__[5:]}'
         os.makedirs(self.cwd, exist_ok=True)
 
+from gym import spaces
+import numpy as np
+import torch
 
 def get_gym_env_args(env, if_print: bool) -> dict:
     """Get a dict ``env_args`` about a standard OpenAI gym env information.
@@ -197,8 +220,9 @@ def kwargs_filter(function, kwargs: dict) -> dict:
 
 
 def build_env(env_class=None, env_args=None):
+    return ChallengeWrapper(env=CybORG(path,'sim', agents={'Red': B_lineAgent}), agent_name="Blue", max_steps=100)
     # return ChallengeWrapper(env=CybORG(path,'sim', agents={'Red': RedMeanderAgent}), agent_name="Blue", max_steps=100)
-    return HierEnv()
+    # return HierEnv()
 
 class AgentBase:
     def __init__(self, net_dims: [int], state_dim: int, action_dim: int, gpu_id: int = 0, args: Config = Config()):
@@ -241,20 +265,23 @@ class AgentBase:
             tar.data.copy_(cur.data * tau + tar.data * (1.0 - tau))
 
 
-class AgentDQN(AgentBase):
+class AgentPPO(AgentBase):
     def __init__(self, net_dims: [int], state_dim: int, action_dim: int, gpu_id: int = 0, args: Config = Config()):
-        self.act_class = getattr(self, "act_class", QNet)
-        self.cri_class = getattr(self, "cri_class", None)  # means `self.cri = self.act`
+        self.if_off_policy = False
+        self.act_class = getattr(self, "act_class", ActorPPO)
+        self.cri_class = getattr(self, "cri_class", CriticPPO)
         AgentBase.__init__(self, net_dims, state_dim, action_dim, gpu_id, args)
-        self.act_target = self.cri_target = deepcopy(self.act)
 
-        self.act.explore_rate = getattr(args, "explore_rate", 1)  # set for `self.act.get_action()`
-        # the probability of choosing action randomly in epsilon-greedy
-        
-    def explore_env(self, env, horizon_len: int, if_random: bool = False) -> [Tensor]:
+        self.ratio_clip = getattr(args, "ratio_clip", 0.25)  # `ratio.clamp(1 - clip, 1 + clip)`
+        self.lambda_gae_adv = getattr(args, "lambda_gae_adv", 0.95)  # could be 0.80~0.99
+        self.lambda_entropy = getattr(args, "lambda_entropy", 0.01)  # could be 0.00~0.10
+        self.lambda_entropy = torch.tensor(self.lambda_entropy, dtype=torch.float32, device=self.device)
+
+    def explore_env(self, env, horizon_len: int) -> [Tensor]:
         states = torch.zeros((horizon_len, self.state_dim), dtype=torch.float32).to(self.device)
-        actions = torch.zeros((horizon_len, 1), dtype=torch.int32).to(self.device)
-        rewards = torch.ones(horizon_len, dtype=torch.float32).to(self.device)
+        actions = torch.zeros(horizon_len, dtype=torch.int64).to(self.device)
+        logprobs = torch.zeros(horizon_len, dtype=torch.float32).to(self.device)
+        rewards = torch.zeros(horizon_len, dtype=torch.float32).to(self.device)
         dones = torch.zeros(horizon_len, dtype=torch.bool).to(self.device)
 
         ary_state = self.last_state
@@ -262,103 +289,88 @@ class AgentDQN(AgentBase):
         get_action = self.act.get_action
         for i in range(horizon_len):
             state = torch.as_tensor(ary_state, dtype=torch.float32, device=self.device)
-            if if_random:
-                action = torch.randint(self.action_dim, size=(1,))[0]
-            else:
-                action = get_action(state.unsqueeze(0))[0, 0]
+            action, logprob = [t for t in get_action(state.unsqueeze(0))[:2]]
 
-            ary_action = action.detach().cpu().numpy()
-            ary_state, reward, done, _ = env.step(ary_action)
+            ary_action = action
+            ary_state, reward, done, info = env.step(ary_action)
             if done:
                 ary_state = env.reset()
 
             states[i] = state
             actions[i] = action
+            logprobs[i] = logprob
             rewards[i] = reward
             dones[i] = done
 
         self.last_state = ary_state
         rewards = (rewards * self.reward_scale).unsqueeze(1)
-        undones = (1.0 - dones.type(torch.float32)).unsqueeze(1)
-        return states, actions, rewards, undones
+        undones = (1 - dones.type(torch.float32)).unsqueeze(1)
+        return states, actions, logprobs, rewards, undones
 
     def update_net(self, buffer) -> [float]:
-        obj_critics = 0.0
-        q_values = 0.0
-
-        update_times = int(buffer.cur_size * self.repeat_times / self.batch_size)
-        assert update_times >= 1
-        for i in range(update_times):
-            obj_critic, q_value = self.get_obj_critic(buffer, self.batch_size)
-            self.optimizer_update(self.cri_optimizer, obj_critic)
-            self.soft_update(self.cri_target, self.cri, self.soft_update_tau)
-
-            obj_critics += obj_critic.item()
-            q_values += q_value.item()
-        return obj_critics / update_times, q_values / update_times
-
-    def update_net(self, buffer) -> [float]:
-        obj_critics = 0.0
-        q_values = 0.0
-
-        update_times = int(buffer.cur_size * self.repeat_times / self.batch_size)
-        assert update_times >= 1
-        for i in range(update_times):
-            obj_critic, q_value = self.get_obj_critic(buffer, self.batch_size)
-            self.optimizer_update(self.cri_optimizer, obj_critic)
-            self.soft_update(self.cri_target, self.cri, self.soft_update_tau)
-
-            obj_critics += obj_critic.item()
-            q_values += q_value.item()
-        return obj_critics / update_times, q_values / update_times
-
-    def get_obj_critic(self, buffer, batch_size: int) -> (Tensor, Tensor):
         with torch.no_grad():
-            state, action, reward, undone, next_state = buffer.sample(batch_size)
-            next_q = self.cri_target(next_state).max(dim=1, keepdim=True)[0]
-            q_label = reward + undone * self.gamma * next_q
-        q_value = self.cri(state).gather(1, action.long())
-        obj_critic = self.criterion(q_value, q_label)
-        return obj_critic, q_value.mean()
+            states, actions, logprobs, rewards, undones = buffer
+            buffer_size = states.shape[0]
 
-class ReplayBuffer:  # for off-policy
-    def __init__(self, max_size: int, state_dim: int, action_dim: int, gpu_id: int = 0):
-        self.p = 0  # pointer
-        self.if_full = False
-        self.cur_size = 0
-        self.max_size = max_size
-        self.device = torch.device(f"cuda:{gpu_id}" if (torch.cuda.is_available() and (gpu_id >= 0)) else "cpu")
+            '''get advantages reward_sums'''
+            bs = 2 ** 10  # set a smaller 'batch_size' when out of GPU memory.
+            values = [self.cri(states[i:i + bs]) for i in range(0, buffer_size, bs)]
+            values = torch.cat(values, dim=0).squeeze(1)  # values.shape == (buffer_size, )
 
-        self.states = torch.empty((max_size, state_dim), dtype=torch.float32, device=self.device)
-        self.actions = torch.empty((max_size, action_dim), dtype=torch.float32, device=self.device)
-        self.rewards = torch.empty((max_size, 1), dtype=torch.float32, device=self.device)
-        self.undones = torch.empty((max_size, 1), dtype=torch.float32, device=self.device)
+            advantages = self.get_advantages(rewards, undones, values)  # advantages.shape == (buffer_size, )
+            reward_sums = advantages + values  # reward_sums.shape == (buffer_size, )
+            del rewards, undones, values
 
-    def update(self, items: [Tensor]):
-        states, actions, rewards, undones = items
-        p = self.p + rewards.shape[0]  # pointer
-        if p > self.max_size:
-            self.if_full = True
-            p0 = self.p
-            p1 = self.max_size
-            p2 = self.max_size - self.p
-            p = p - self.max_size
+            # advantages = (advantages - advantages.mean()) / (advantages.std(dim=0) + 1e-5)
+        assert logprobs.shape == advantages.shape == reward_sums.shape == (buffer_size,)
 
-            self.states[p0:p1], self.states[0:p] = states[:p2], states[-p:]
-            self.actions[p0:p1], self.actions[0:p] = actions[:p2], actions[-p:]
-            self.rewards[p0:p1], self.rewards[0:p] = rewards[:p2], rewards[-p:]
-            self.undones[p0:p1], self.undones[0:p] = undones[:p2], undones[-p:]
-        else:
-            self.states[self.p:p] = states
-            self.actions[self.p:p] = actions
-            self.rewards[self.p:p] = rewards
-            self.undones[self.p:p] = undones
-        self.p = p
-        self.cur_size = self.max_size if self.if_full else self.p
+        '''update network'''
+        obj_critics = 0.0
+        obj_actors = 0.0
 
-    def sample(self, batch_size: int) -> [Tensor]:
-        ids = torch.randint(self.cur_size - 1, size=(batch_size,), requires_grad=False)
-        return self.states[ids], self.actions[ids], self.rewards[ids], self.undones[ids], self.states[ids + 1]
+        update_times = int(buffer_size * self.repeat_times / self.batch_size)
+        assert update_times >= 1
+        for _ in range(update_times):
+            indices = torch.randint(buffer_size, size=(self.batch_size,), requires_grad=False)
+            state = states[indices]
+            action = actions[indices]
+            logprob = logprobs[indices]
+            advantage = advantages[indices]
+            reward_sum = reward_sums[indices]
+
+            value = self.cri(state).squeeze(1)  # critic network predicts the reward_sum (Q value) of state
+            obj_critic = self.criterion(value, reward_sum)
+            self.optimizer_update(self.cri_optimizer, obj_critic)
+
+            new_logprob, obj_entropy = self.act.get_logprob_entropy(state, action)
+            ratio = (new_logprob - logprob.detach()).exp()
+            surrogate1 = advantage * ratio
+            surrogate2 = advantage * ratio.clamp(1 - self.ratio_clip, 1 + self.ratio_clip)
+            obj_surrogate = torch.min(surrogate1, surrogate2).mean()
+
+            obj_actor = obj_surrogate + obj_entropy.mean() * self.lambda_entropy
+            self.optimizer_update(self.act_optimizer, -obj_actor)
+
+            obj_critics += obj_critic.item()
+            obj_actors += obj_actor.item()
+        a_std_log = getattr(self.act, 'a_std_log', torch.zeros(1)).mean()
+        return obj_critics / update_times, obj_actors / update_times, a_std_log.item()
+
+    def get_advantages(self, rewards: Tensor, undones: Tensor, values: Tensor) -> Tensor:
+        advantages = torch.empty_like(values)  # advantage value
+
+        masks = undones * self.gamma
+        horizon_len = rewards.shape[0]
+
+        next_state = torch.tensor(self.last_state, dtype=torch.float32).to(self.device)
+        next_value = self.cri(next_state.unsqueeze(0)).detach().squeeze(1).squeeze(0)
+
+        advantage = 0  # last_gae_lambda
+        for t in range(horizon_len - 1, -1, -1):
+            delta = rewards[t] + masks[t] * next_value - values[t]
+            advantages[t] = advantage = delta + masks[t] * self.lambda_gae_adv * advantage
+            next_value = values[t]
+        return advantages
 
 
 def train_agent(args: Config):
@@ -367,30 +379,31 @@ def train_agent(args: Config):
     env = build_env(args.env_class, args.env_args)
     agent = args.agent_class(args.net_dims, args.state_dim, args.action_dim, gpu_id=args.gpu_id, args=args)
     agent.last_state = env.reset()
-    buffer = ReplayBuffer(gpu_id=args.gpu_id, max_size=args.buffer_size,
-                          state_dim=args.state_dim, action_dim=1 if args.if_discrete else args.action_dim, )
-    buffer_items = agent.explore_env(env, args.horizon_len * args.eval_times, if_random=True)
-    buffer.update(buffer_items)  # warm up for ReplayBuffer
 
-    evaluator = Evaluator(eval_env=HierEnv(),
-                          eval_per_step=args.eval_per_step, eval_times=args.eval_times, cwd=args.cwd)
-    with wandb.init(project="elegentrl.dqn.cyborg", name=f"12-6_elegentrl.dqn.cyborg.HierEnv.epsilonDecay{args.epsilon_decay_rate}.evalEnv.{args.eval_env}", dir="/home/zhx/word/DriverOrderOfflineRL/scripts/wandb", config=args):
+    evaluator = Evaluator(eval_env=build_env(args.env_class, args.env_args),
+                          eval_per_step=args.eval_per_step,
+                          eval_times=args.eval_times,
+                          cwd=args.cwd)
+    step = 0
+    with wandb.init(project="elegentrl.ppo.cyborg", name="12-8_elegentrl.ppo.cyborg.3layerMlp.HierEnv", dir="/home/zhx/word/DriverOrderOfflineRL/scripts/wandb", config=args):
         wandb.watch(agent.act, log="gradients", log_freq=10)
-        torch.set_grad_enabled(False)
+        wandb.watch(agent.cri, log="gradients", log_freq=10)
+    # for i in range(100):
         while True:  # start training
             buffer_items = agent.explore_env(env, args.horizon_len)
-            buffer.update(buffer_items)
 
-            agent.act.explore_rate *= args.epsilon_decay_rate
-            torch.set_grad_enabled(True)
-            logging_tuple = agent.update_net(buffer)
-            torch.set_grad_enabled(False)
+            logging_tuple = agent.update_net(buffer_items)
+
+            # print(f"100 len return: {buffer_items[3].sum() / 20}")
 
             evaluator.evaluate_and_save(agent.act, args.horizon_len, logging_tuple)
-            if (evaluator.total_step % 10000):
-                torch.save(agent.act.state_dict(), f"{wandb.run.dir}/{int(evaluator.total_step / 2000)}actor.pth")
+            step += 1
+            if (step % 10):
+                torch.save(agent.act.state_dict(), f"{wandb.run.dir}/{step}actor.pth")
+                torch.save(agent.cri.state_dict(), f"{wandb.run.dir}/{step}critic.pth")
             if (evaluator.total_step > args.break_step) or os.path.exists(f"{args.cwd}/stop"):
                 break  # stop training when reach `break_step` or `mkdir cwd/stop`
+
 
 def render_agent(env_class, env_args: dict, net_dims: [int], agent_class, actor_path: str, render_times: int = 8):
     env = build_env(env_class, env_args)
@@ -442,11 +455,9 @@ class Evaluator:
         used_time = time.time() - self.start_time
         self.recorder.append((self.total_step, used_time, avg_r))
 
-        print("test_result: ", avg_r)
         print(f"|step: {self.total_step:8.2e}  used_time:{used_time:8.0f}  "
               f"| avg_r:{avg_r:8.2f}  std_r:{std_r:6.2f}  avg_s:{avg_s:6.0f}  "
-              f"| objC:{logging_tuple[0]:8.2f}  objA:{logging_tuple[1]:8.2f}"
-              f"| epsilon: {actor.explore_rate:8.2f}")
+              f"| objC:{logging_tuple[0]:8.2f}  objA:{logging_tuple[1]:8.2f}")
         wandb.log({
             "totoal_step": self.total_step,
             "used_time": used_time,
@@ -454,8 +465,7 @@ class Evaluator:
             "std_r": std_r,
             "avg_s": avg_s,
             "objC": logging_tuple[0],
-            "objA": logging_tuple[1],
-            "epsilon": actor.explore_rate})
+            "objA": logging_tuple[1]})
 
 
 def get_rewards_and_steps(env, actor, if_render: bool = False) -> (float, int):  # cumulative_rewards and episode_steps
@@ -466,7 +476,7 @@ def get_rewards_and_steps(env, actor, if_render: bool = False) -> (float, int): 
     cumulative_returns = 0.0  # sum of rewards in an episode
     for episode_steps in range(500):
         tensor_state = torch.as_tensor(state, dtype=torch.float32, device=device).unsqueeze(0)
-        tensor_action = actor.get_action(tensor_state)
+        tensor_action, _ = actor.get_action(tensor_state)
         action = tensor_action  # not need detach(), because using torch.no_grad() outside
         state, reward, done, info = env.step(action)
         cumulative_returns += reward
@@ -477,20 +487,90 @@ def get_rewards_and_steps(env, actor, if_render: bool = False) -> (float, int): 
 
 
 
-def train_dqn():
+def train_ppo():
+    agent_class = AgentPPO  # DRL algorithm name
+    # env = ChallengeWrapper(env=CybORG(path,'sim', agents={'Red': RedMeanderAgent}), agent_name="Blue", max_steps=100)
+    env = ChallengeWrapper(env=CybORG(path,'sim', agents={'Red': RedMeanderAgent}), agent_name="Blue", max_steps=100)
+    env_class = None  # run a custom env: PendulumEnv, which based on OpenAI pendulum
     env_args = {
-        'env_name': 'cyborg',  # A pole is attached by an un-actuated joint to a cart.
-        'state_dim': 52,  # (CartPosition, CartVelocity, PoleAngle, PoleAngleVelocity)
-        'action_dim': 54,  # (Push cart to the left, Push cart to the right)
-        'if_discrete': True,  # discrete action space
-    }  # env_args = get_gym_env_args(env=gym.make('CartPole-v0'), if_print=True)
+        'env_name': 'cyborg',  # Apply torque on the free end to swing a pendulum into an upright position
+        'state_dim': 52,  # the x-y coordinates of the pendulum's free end and its angular velocity.
+        'action_dim': 54,  # the torque applied to free end of the pendulum
+        'if_discrete': True  # continuous action space, symbols → direction, value → force
+    }
+    
 
-    args = Config(agent_class=AgentDQN, env_class=None, env_args=env_args)  # see `Config` for explanation
+
+
+
+    # env
+    get_gym_env_args(env=env, if_print=True)  # return env_args
+
+    args = Config(agent_class, env_class, env_args)  # see `config.py Arguments()` for hyperparameter explanation
+    args.env = env
     args.break_step = int(2e5 * 2000)  # break training if 'total_step > break_step'
     args.net_dims = (256, 256)  # the middle layer dimension of MultiLayer Perceptron
-    args.gamma = 0.95  # discount factor of future rewards
+    args.gamma = 0.97  # discount factor of future rewards
+    args.repeat_times = 4  # repeatedly update network using ReplayBuffer to keep critic's loss small
 
+    # seed
+    np.random.seed(args.random_seed)
+    torch.manual_seed(args.random_seed)
     train_agent(args)
 
+def test_ppo():
+    agent_class = AgentPPO  # DRL algorithm name
+    # env = ChallengeWrapper(env=CybORG(path,'sim', agents={'Red': RedMeanderAgent}), agent_name="Blue", max_steps=100)
+    env = ChallengeWrapper(env=CybORG(path,'sim', agents={'Red': RedMeanderAgent}), agent_name="Blue", max_steps=100)
+    env_class = None  # run a custom env: PendulumEnv, which based on OpenAI pendulum
+    env_args = {
+        'env_name': 'cyborg',  # Apply torque on the free end to swing a pendulum into an upright position
+        'state_dim': 52,  # the x-y coordinates of the pendulum's free end and its angular velocity.
+        'action_dim': 54,  # the torque applied to free end of the pendulum
+        'if_discrete': True  # continuous action space, symbols → direction, value → force
+    }
 
-train_dqn()
+    # env
+    get_gym_env_args(env=env, if_print=True)  # return env_args
+
+    args = Config(agent_class, env_class, env_args)  # see `config.py Arguments()` for hyperparameter explanation
+    args.env = env
+    args.break_step = int(2e5 * 2000)  # break training if 'total_step > break_step'
+    args.net_dims = (256, 256)  # the middle layer dimension of MultiLayer Perceptron
+    args.gamma = 0.97  # discount factor of future rewards
+    args.repeat_times = 4  # repeatedly update network using ReplayBuffer to keep critic's loss small
+
+    # seed
+    np.random.seed(args.random_seed)
+    torch.manual_seed(args.random_seed)
+
+    args.init_before_training()
+
+    env = build_env(args.env_class, args.env_args)
+    agent = args.agent_class(args.net_dims, args.state_dim, args.action_dim, gpu_id=args.gpu_id, args=args)
+    agent.last_state = env.reset()
+
+    agent.act.load_state_dict(torch.load('/home/zhx/word/DriverOrderOfflineRL/scripts/wandb/wandb/run-20231206_195356-iq51vnpl/files/9744actor.pth'))
+    actor = agent.act
+
+    device = next(actor.parameters()).device  # net.parameters() is a Python generator.
+
+    
+    episode_steps = 0
+    cumulative_returns = 0.0  # sum of rewards in an episode
+    for i in range(10):
+        state = env.reset()
+        for episode_steps in range(500):
+            tensor_state = torch.as_tensor(state, dtype=torch.float32, device=device).unsqueeze(0)
+            tensor_action, _ = actor.get_action(tensor_state)
+            action = tensor_action  # not need detach(), because using torch.no_grad() outside
+            state, reward, done, info = env.step(action)
+            cumulative_returns += reward
+
+            if done:
+                break
+    print('cumulative_returns', cumulative_returns / 10)
+
+
+if __name__ == "__main__":
+    test_ppo()

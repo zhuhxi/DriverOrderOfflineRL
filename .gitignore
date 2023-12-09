@@ -18,3 +18,5 @@ wandb/*
 log/atari.benchmark/
 model/
 /lab_result/*
+/Runs
+

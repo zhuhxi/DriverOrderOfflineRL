@@ -1039,6 +1039,26 @@ class AgentDoubleDQN(AgentDQN):
         obj_critic = self.criterion(q1, q_labels) + self.criterion(q2, q_labels)
         return obj_critic, q1
 
+        # with torch.no_grad():
+        #     states, actions, rewards, undones, next_ss = buffer.sample(batch_size)
+
+        #     next_qs = torch.min(*self.cri_target.get_q1_q2(next_ss)).max(dim=1, keepdim=True)[0].squeeze(1)
+        #     q_labels = rewards + undones * self.gamma * next_qs
+
+        # q_values_1, q_values_2 = self.act.get_q1_q2(states)
+        # q1 = q_values_1.gather(1, actions.long()).squeeze(1)
+        # q2 = q_values_2.gather(1, actions.long()).squeeze(1)
+        # # cql loss
+        # logsumexp_1 = torch.logsumexp(q_values_1, dim=1)
+        # cql_1 = (logsumexp_1 - q1).mean()
+
+        # logsumexp_2 = torch.logsumexp(q_values_2, dim=1)
+        # cql_2 = (logsumexp_2 - q2).mean()
+        
+
+        # obj_critic = self.criterion(q1, q_labels) + self.criterion(q2, q_labels)
+        # return obj_critic * 0.5 + (cql_1 + cql_2), q1
+
     def get_obj_critic_per(self, buffer: ReplayBuffer, batch_size: int) -> Tuple[Tensor, Tensor]:
         """
         Calculate the loss of the network and predict Q values with **Prioritized Experience Replay (PER)**.
@@ -1082,7 +1102,7 @@ class preprocessing(object):
         self.env = env
         self.action_space = self.env.action_space
         self.observation_space = self.env.observation_space
-        self.env_name = 'cyborg'
+        self.env_name = 'cartpole'
         self.num_envs = 1
         self.max_step = 100
         self.if_discrete = True
@@ -1103,8 +1123,8 @@ class preprocessing(object):
 
 
 def build_env(env_class=None, env_args: dict = None, gpu_id: int = -1):
-    # return preprocessing(gym.make('CartPole-v1'))
-    return preprocessing(ChallengeWrapper(env=CybORG(path,'sim', agents={'Red': RedMeanderAgent}), agent_name="Blue", max_steps=100))
+    return preprocessing(gym.make('CartPole-v1'))
+    # return preprocessing(ChallengeWrapper(env=CybORG(path,'sim', agents={'Red': RedMeanderAgent}), agent_name="Blue", max_steps=100))
 
 ## eval agent
 class Evaluator:
@@ -1483,7 +1503,7 @@ def test_agent(args: Config):
 
     '''init agent'''
     agent = args.agent_class(args.net_dims, args.state_dim, args.action_dim, gpu_id=args.gpu_id, args=args)
-    agent.act = torch.load('/home/zhx/word/DriverOrderOfflineRL/Runs/12-9.cyborg.B_lineAgent_D3QN_0/actor__000000635392_-0007.633.pt')
+    agent.act = torch.load('/home/zhx/word/DriverOrderOfflineRL/Runs/12-9.cyborg.RedMeanderAgent_D3QN_0/actor__000000123392_-0003.400.pt')
     '''init agent.last_state'''
     state = env.reset()
     if args.num_envs == 1:
@@ -1512,13 +1532,16 @@ def test_agent(args: Config):
     if_off_policy = args.if_off_policy
     if_save_buffer = args.if_save_buffer
 
-    rewards_and_steps = evaluator.get_cumulative_rewards_and_step_single_env(agent.act)
-    print("mean_rewards", rewards_and_steps[:, 0].mean().data.item())
+    reward_sum = 0
+    for i in range(10):
+        rewards_and_steps = evaluator.get_cumulative_rewards_and_step_single_env(agent.act)
+        reward_sum += rewards_and_steps[:, 0].mean().data.item()
+    print("mean_rewards", reward_sum / 10)
 
 env_args = {
-    'env_name': '12-9.cyborg.B_lineAgent',  # A pole is attached by an un-actuated joint to a cart.
-    'state_dim': 52,  # (CartPosition, CartVelocity, PoleAngle, PoleAngleVelocity)
-    'action_dim': 54,  # (Push cart to the left, Push cart to the right)
+    'env_name': '12-11.cartpole',  # A pole is attached by an un-actuated joint to a cart.
+    'state_dim': 4,  # (CartPosition, CartVelocity, PoleAngle, PoleAngleVelocity)
+    'action_dim': 2,  # (Push cart to the left, Push cart to the right)
     'if_discrete': True,  # discrete action space
 }  # env_args = get_gym_env_args(env=gym.make('CartPole-v0'), if_print=True)
 
@@ -1526,5 +1549,5 @@ args = Config(agent_class=AgentD3QN, env_class=None, env_args=env_args)  # see `
 args.break_step = int(2e5 * 2000)  # break training if 'total_step > break_step'
 args.net_dims = (256, 256)  # the middle layer dimension of MultiLayer Perceptron
 args.gamma = 0.95  # discount factor of future rewards
-# train_agent(args)
-test_agent(args)
+train_agent(args)
+# test_agent(args)

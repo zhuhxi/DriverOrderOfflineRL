@@ -4,3 +4,6 @@
 /scripts/support_feature_ddqn.pkl
 /scripts/trained_models/*
 /lab_result/*
+/scripts/parl.ipynb
+/scripts/runs/
+train_log/

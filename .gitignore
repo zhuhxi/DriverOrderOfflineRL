@@ -19,4 +19,6 @@ log/atari.benchmark/
 model/
 /lab_result/*
 /Runs
-
+scripts/parl.ipynb
+scripts/runs/*
+train_log/*
